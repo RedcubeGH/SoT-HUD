@@ -40,10 +40,9 @@ ammophoto = ImageTk.PhotoImage(ammogauge_img)
 # put shit in center
 cx, cy = screen_width // 2, screen_height // 2
 
-# canvas.create_polygon() ts prly for healthbar
-
-def check_ammo():
+def UpdateHUD():
     screen_img = ImageGrab.grab()
+    #Update ammo
     for i in range(0, 6):
         pixel_colour = screen_img.getpixel((1642+(26*i), 980))
         hex_colour = '{:02X}{:02X}{:02X}'.format(*pixel_colour[:3])
@@ -54,20 +53,30 @@ def check_ammo():
             canvas.create_rectangle(1642+(26*i), 980, 1642+(26*i), 980, fill="black", outline="", tags="ammo")
         else:
             canvas.delete("ammo")     
-
+    #Update Healthbar
     pixel_colour = screen_img.getpixel((171, 975))
     hex_colour = '{:02X}{:02X}{:02X}'.format(*pixel_colour[:3])
     if not hex_colour == "3EDE7F" and not hex_colour == "ED3340":
         canvas.delete("skull_image")
+        canvas.delete("health")
     elif not canvas.find_withtag("skull_image"):
         canvas.create_image(cx, cy, image=skullphoto, tags="skull_image")
         # stop shit from disappearing cus garbage
         canvas.image = skullphoto
+        #Update Health
+        canvas.create_polygon(
+        170, 975,  # Top-left corner
+        183, 990,  # Bottom-left corner
+        393, 990,  # Bottom-right corner
+        380, 975,  # Top-right corner
+        fill="white", outline="", tags="health"
+        )
+        canvas.create_rectangle(171, 975, 171, 975, fill="black", tags="health")
     else:
         pass
-    root.after(1, check_ammo) #loop every ms
+    root.after(1, UpdateHUD) #loop every ms
 
-check_ammo()
+UpdateHUD()
 
 
 hwnd = win32gui.FindWindow(None, str(root.title()))
