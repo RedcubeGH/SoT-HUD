@@ -10,8 +10,13 @@ from ctypes import windll
 import numpy as np
 
 lowhealthvar = 44
-lowhealthcolour = "#FFFFFF"
-healthcolour = "#FFFFFF"
+lowhealthcolour = "#FF0000"
+healthcolour = "#00FF00"
+numberhealthcolour = "#FFFFFF"
+numberammocolour = "#FFFFFF"
+font = "Arial"
+ammosize = 25
+hpsize = 25
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -48,13 +53,35 @@ ammogauge_path = os.path.join(script_dir, "ammogauge-pistol-ammunition.png")
 ammogauge_img = Image.open(ammogauge_path)
 scaled_ammogauge_img = ammogauge_img.resize((18, 17), Image.NEAREST)
 ammogauge_arr = np.array(scaled_ammogauge_img, dtype=np.uint16)
-ammogauge_arr[:, :, :3] += 1
+ammogauge_arr[:, :, :3] += 2
 np.clip(ammogauge_arr, 0, 255, out=ammogauge_arr)
 ammogauge_corrected = Image.fromarray(ammogauge_arr.astype(np.uint8))
 ammophoto = ImageTk.PhotoImage(ammogauge_corrected)
 
+# keeps images in memory
+canvas.ammogauge_photo = ammophoto
+canvas.image = skullphoto
+
+# Create Skull
+canvas.create_image(141, 983, image=skullphoto, tags="skull_image")
+
+#Create Healthbar
+canvas.create_polygon(
+170, 975,  # Top-left corner
+183, 990,  # Bottom-left corner
+393, 990,  # Bottom-right corner
+380, 975,  # Top-right corner
+outline="", tags="health"
+)
+
+# Number Based Health
+canvas.create_text(217, 950, fill=numberhealthcolour, font=(font, hpsize), tags="numberhealth")
+
+# Number Based Ammo
+canvas.create_text(1680, 950, fill=numberammocolour, font=(font, ammosize), tags="numberammo")
+
 def UpdateHUD():
-    #Only captures SoT
+    # only captures SoT
     hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
     left, top, right, bot = win32gui.GetClientRect(hwnd)
     w = right - left
@@ -76,39 +103,35 @@ def UpdateHUD():
     screen_img = Image.frombuffer(
         'RGB',
         (bmpinfo['bmWidth'], bmpinfo['bmHeight']),
-        bmpstr, 'raw', 'BGRX', 0, 1)
-    #Update ammo
-    canvas.delete("numberammo")
-    if canvas.find_withtag("ammo"):
-        canvas.create_text(1680, 950, text=f"{len(canvas.find_withtag("ammo"))}/5", tags="numberammo", fill="white", font=("Arial", 25))
-    for i in range(-1, 6):
+        bmpstr, 'raw', 'BGRX', 0, 1)    
+    
+    # Update Ammogauge
+    for i in range(0, 6):
         pixel_colour = screen_img.getpixel((1642+(26*i), 980))
         hex_colour = '{:02X}{:02X}{:02X}'.format(*pixel_colour[:3])
-        if hex_colour == "ADFFAB":  # check for ammo
-            canvas.create_image(1642+(26*i), 980, image=ammophoto, tags="ammo")
-            # stop shit from disappearing cus garbage
-            canvas.ammogauge_photo = ammophoto
+        if hex_colour == "ADFFAB" and not canvas.find_withtag(f"ammo{i}"):  # check for ammo
+            canvas.create_image(1642+(26*i), 980, image=ammophoto, tags=(f"ammo{i}", "ammo"))
+        elif not hex_colour == "ADFFAB":
+            canvas.delete(f"ammo{i}")
         else:
-            canvas.delete("ammo")     
+            break
+        
+    # Update Number Based Ammo
+    if canvas.find_withtag("ammo"):
+        canvas.itemconfig("numberammo", state="normal", text=f"{len(canvas.find_withtag("ammo"))}/5")
+    else:
+        canvas.itemconfig("numberammo", state="hidden")
+     
     #Update Healthbar
     pixel_colour = screen_img.getpixel((171, 975))
     hex_colour = '{:02X}{:02X}{:02X}'.format(*pixel_colour[:3])
-    if hex_colour not in {"3EDE7F", "ED3340", "3EDE7E", "EB3340"}:
-        canvas.delete("skull_image")
-        canvas.delete("health")
-        canvas.delete("numberhealth")
-    elif not canvas.find_withtag("skull_image"):
-        canvas.create_image(141, 983, image=skullphoto, tags="skull_image")
-        # stop shit from disappearing cus garbage
-        canvas.image = skullphoto
-        #Create Healthbar
-        canvas.create_polygon(
-        170, 975,  # Top-left corner
-        183, 990,  # Bottom-left corner
-        393, 990,  # Bottom-right corner
-        380, 975,  # Top-right corner
-        fill="white", outline="", tags="health"
-        )
+    
+    if hex_colour in {"3EDE7F", "ED3340", "3EDE7E", "EB3340"}:
+        canvas.itemconfig("skull_image", state="normal")
+        canvas.itemconfig("health", state="normal")
+        canvas.itemconfig("numberhealth", state="normal")
+        
+        # Update Health
         for hp in range(0, 100):
             pixel_colour = screen_img.getpixel((385-(2*hp), 984))
             hex_colour = '{:02X}{:02X}{:02X}'.format(*pixel_colour[:3])
@@ -120,38 +143,24 @@ def UpdateHUD():
                 383-(((383-176)/100)*hp), 973   # Top-right
                 )
                 if 100-hp <= lowhealthvar:
-                    canvas.itemconfig("health", fill=lowhealthcolour)
-                else:
-                    canvas.itemconfig("health", fill=healthcolour)
-                canvas.create_text(
-                    215, 950, text=f"{100-hp}/100", fill="white", font=("Arial", 25), tags="numberhealth"
-                )    
-                break
-    elif canvas.find_withtag("skull_image"):
-        #Update Health
-        for hp in range(0, 100):
-            pixel_colour = screen_img.getpixel((385-(2*hp), 984))
-            hex_colour = '{:02X}{:02X}{:02X}'.format(*pixel_colour[:3])
-            if hex_colour in {"43EF88", "FF3745", "43EF88", "FF3745"}:
-                canvas.coords("health",
-                168, 973,  # Top-left
-                183, 989,  # Bottom-left
-                398-(((398-190)/100)*hp), 989,  # Bottom-right
-                383-(((383-176)/100)*hp), 973   # Top-right
-                )
-                if 100-hp <= lowhealthvar:
-                    canvas.itemconfig("health", fill=lowhealthcolour)
+                    canvas.itemconfig("health", fill=lowhealthcolour)                
                 else:
                     canvas.itemconfig("health", fill=healthcolour)
                 canvas.itemconfig("numberhealth", text=f"{100-hp}/100")
     
                 break
-        pass
+    else:
+        canvas.itemconfig("skull_image", state="hidden")
+        canvas.itemconfig("health", state="hidden")
+        canvas.itemconfig("numberhealth", state="hidden")    
+    
+    # Cleanup
     win32gui.DeleteObject(saveBitMap.GetHandle())
     saveDC.DeleteDC()
     mfcDC.DeleteDC()
     win32gui.ReleaseDC(hwnd, hwndDC)
-    root.after(1, UpdateHUD) #loop every ms
+    
+    root.after(8, UpdateHUD) #loop every ms
 
 UpdateHUD()
 hwnd = win32gui.FindWindow(None, str(root.title()))
