@@ -3,14 +3,15 @@ import win32gui
 import win32con
 import win32ui
 import keyboard
-from PIL import Image, ImageTk
 import os
 from ctypes import windll
+from PIL import Image, ImageTk
 import numpy as np
 
 lowhealthvar = 70
 lowhealthcolour = "#FF0000"
 healthcolour = "#FFFF00"
+overhealcolour = "#00FF00"
 numberhealthcolour = "#FFFFFF"
 numberammocolour = "#FFFFFF"
 crosshaircolour = "#FFFFFF"
@@ -18,6 +19,14 @@ crosshairoutlinecolour = "#080808"
 font = "Arial"
 ammosize = 25
 hpsize = 25
+ammotoggle = True
+crosshairtoggle = True
+healthbartoggle = True
+healthbardecotoggle = True
+skulltoggle = True
+regentoggle = True
+numberhealthtoggle = True
+numberammotoggle = True
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -80,9 +89,21 @@ try:
 except IndexError:
     print("Overlay image does not have an alpha channel, skipping Overlay")
     
+# Create Regen Meter
+canvas.create_oval(
+115, 956,
+165, 1007,
+fill=overhealcolour, outline="", tags="regen_meter", state="hidden"
+)
+canvas.create_oval(
+122, 963,
+158, 1000,
+fill="black", outline="", tags="regen_meter", state="hidden"
+)
+
 # Create Crosshair
 canvas.create_oval(
-screen_width//2 - 2, screen_height//2 - 2,
+screen_width//2 - 3, screen_height//2 - 3,
 screen_width//2 + 2, screen_height//2 + 2, 
 fill=crosshaircolour, outline=crosshairoutlinecolour, tags="crosshair")
 
@@ -138,21 +159,25 @@ def UpdateHUD():
         canvas.itemconfig("overlay", state="normal")
 
         # Update Ammogauge
-        for i in range(0, 6):
-            pixel_colour = screen_img.getpixel((1642+(26*i), 980))
-            hex_colour = '{:02X}{:02X}{:02X}'.format(*pixel_colour[:3])
-            if hex_colour == "ADFFAB" and not canvas.find_withtag(f"ammo{i}"):  # check for ammo
-                canvas.create_image(1642+(26*i), 980, image=ammophoto, tags=(f"ammo{i}", "ammo"))
-            elif not hex_colour == "ADFFAB":
-                canvas.delete(f"ammo{i}")
-            else:
-                break
-        canvas.itemconfig("ammo", state="normal")
+        if ammotoggle:
+            for i in range(0, 6):
+                pixel_colour = screen_img.getpixel((1642+(26*i), 980))
+                hex_colour = '{:02X}{:02X}{:02X}'.format(*pixel_colour[:3])
+                if hex_colour == "ADFFAB" and not canvas.find_withtag(f"ammo{i}"):  # check for ammo
+                    canvas.create_image(1642+(26*i), 980, image=ammophoto, tags=(f"ammo{i}", "ammo"))
+                elif not hex_colour == "ADFFAB":
+                    canvas.delete(f"ammo{i}")
+                else:
+                    break
+            canvas.itemconfig("ammo", state="normal")
                     
         # Update Number Based Ammo and Crosshair
         if canvas.find_withtag("ammo"):
-            canvas.itemconfig("numberammo", state="normal", text=f"{len(canvas.find_withtag("ammo"))}/5")
-            canvas.itemconfig("crosshair", state="normal")
+            if numberammotoggle:
+                ammocount = len(canvas.find_withtag("ammo"))
+                canvas.itemconfig("numberammo", state="normal", text=f"{ammocount}/5")
+            if crosshairtoggle:
+                canvas.itemconfig("crosshair", state="normal")
         else:
             canvas.itemconfig("numberammo", state="hidden")
             canvas.itemconfig("crosshair", state="hidden")
@@ -162,34 +187,44 @@ def UpdateHUD():
         hex_colour = '{:02X}{:02X}{:02X}'.format(*pixel_colour[:3])
 
         if hex_colour in {"3EDE7F", "ED3340", "3EDE7E", "EB3340"}:
-            canvas.itemconfig("skull_image", state="normal")
-            canvas.itemconfig("health", state="normal")
-            canvas.itemconfig("numberhealth", state="normal")
-            canvas.itemconfig("healthbardecoration", state="normal")
-            
-            # Update Health
-            for hp in range(0, 100):
-                pixel_colour = screen_img.getpixel((385-(2*hp), 984))
-                hex_colour = '{:02X}{:02X}{:02X}'.format(*pixel_colour[:3])
-                if hex_colour in {"43EF88", "FF3745", "43EF88", "FF3745"}:
-                    canvas.coords("health",
-                    167, 974,  # Top-left
-                    182, 989,  # Bottom-left
-                    395-(((395-191)/100)*hp), 990,  # Bottom-right
-                    380-(((380-176)/100)*hp), 974   # Top-right
-                    )
-                    if 100-hp <= lowhealthvar:
-                        canvas.itemconfig("health", fill=lowhealthcolour)                
-                    else:
-                        canvas.itemconfig("health", fill=healthcolour)
-                    canvas.itemconfig("numberhealth", text=f"{100-hp}/100")
+            if skulltoggle:
+                canvas.itemconfig("skull_image", state="normal")
+                
+            if numberhealthtoggle:
+                canvas.itemconfig("numberhealth", state="normal")
+                
+            if healthbardecotoggle:
+                canvas.itemconfig("healthbardecoration", state="normal")
+                
+            if regentoggle:
+                canvas.itemconfig("regen_meter", state="normal")
+                
+            if healthbartoggle:
+                canvas.itemconfig("health", state="normal")    
+                # Update Health
+                for hp in range(0, 100):
+                    pixel_colour = screen_img.getpixel((385-(2*hp), 984))
+                    hex_colour = '{:02X}{:02X}{:02X}'.format(*pixel_colour[:3])
+                    if hex_colour in {"43EF88", "FF3745", "43EF88", "FF3745"}:
+                        canvas.coords("health",
+                        167, 974,  # Top-left
+                        182, 989,  # Bottom-left
+                        395-(((395-191)/100)*hp), 990,  # Bottom-right
+                        380-(((380-176)/100)*hp), 974   # Top-right
+                        )
+                        if 100-hp <= lowhealthvar:
+                            canvas.itemconfig("health", fill=lowhealthcolour)                
+                        else:
+                            canvas.itemconfig("health", fill=healthcolour)
+                        canvas.itemconfig("numberhealth", text=f"{100-hp}/100")
 
-                    break
+                        break
         else:
             canvas.itemconfig("skull_image", state="hidden")
             canvas.itemconfig("health", state="hidden")
             canvas.itemconfig("numberhealth", state="hidden")  
-            canvas.itemconfig("healthbardecoration", state="hidden")  
+            canvas.itemconfig("healthbardecoration", state="hidden")
+            canvas.itemconfig("regen_meter", state="hidden")  
 
         # Cleanup
         win32gui.DeleteObject(saveBitMap.GetHandle())
