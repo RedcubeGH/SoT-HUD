@@ -1,12 +1,14 @@
-import tkinter as tk
 import win32gui
 import win32con
 import win32ui
 import keyboard
 import os
-from ctypes import windll
-from PIL import Image, ImageTk
+import json
+import time
 import numpy as np
+import tkinter as tk
+from ctypes import windll
+from PIL import Image, ImageTk, ImageGrab
 
 lowhealthvar = 70
 lowhealthcolour = "#FF0000"
@@ -27,8 +29,10 @@ skulltoggle = True
 regentoggle = True
 numberhealthtoggle = True
 numberammotoggle = True
+calibrated_ammo_colour = (173, 255, 171)
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
+config_path = os.path.join(script_dir, "config.json")
 
 root = tk.Tk()
 root.attributes("-topmost", True)
@@ -47,6 +51,83 @@ root.geometry(f"{screen_width}x{screen_height}+0+0")
 
 canvas = tk.Canvas(root, width=screen_width, height=screen_height, bg="black", highlightthickness=0)
 canvas.pack()
+
+# Save the configuration
+def save_config():
+    config_data = {
+        "lowhealthvar": lowhealthvar,
+        "lowhealthcolour": lowhealthcolour,
+        "healthcolour": healthcolour,
+        "overhealcolour": overhealcolour,
+        "numberhealthcolour": numberhealthcolour,
+        "numberammocolour": numberammocolour,
+        "crosshaircolour": crosshaircolour,
+        "crosshairoutlinecolour": crosshairoutlinecolour,
+        "font": font,
+        "ammosize": ammosize,
+        "hpsize": hpsize,
+        "ammotoggle": ammotoggle,
+        "crosshairtoggle": crosshairtoggle,
+        "healthbartoggle": healthbartoggle,
+        "healthbardecotoggle": healthbardecotoggle,
+        "skulltoggle": skulltoggle,
+        "regentoggle": regentoggle,
+        "numberhealthtoggle": numberhealthtoggle,
+        "numberammotoggle": numberammotoggle,
+        "calibrated_ammo_colour": calibrated_ammo_colour
+    }
+    with open(config_path, "w") as f:
+        json.dump(config_data, f)
+    
+# Check if ammo colour is calibrated
+try:
+    save_config()
+except NameError:
+    canvas.create_text(
+        screen_width//2, screen_height//2,
+        text="Pull out a gun with full ammo to calibrate ammo colour",
+        fill="white", font=("Arial", 30), tags="calibration_text")
+    root.update_idletasks()
+    root.update()
+    hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
+    left, top, right, bot = win32gui.GetClientRect(hwnd)
+    w = right - left
+    h = bot - top
+    hwndDC = win32gui.GetWindowDC(hwnd)
+    mfcDC  = win32ui.CreateDCFromHandle(hwndDC)
+    saveDC = mfcDC.CreateCompatibleDC()
+    saveBitMap = win32ui.CreateBitmap()
+    saveBitMap.CreateCompatibleBitmap(mfcDC, w, h)
+    saveDC.SelectObject(saveBitMap)
+    windll.user32.PrintWindow(hwnd, saveDC.GetSafeHdc(), 2)
+    bmpinfo = saveBitMap.GetInfo()
+    bmpstr = saveBitMap.GetBitmapBits(True)
+    screen_img = Image.frombuffer(
+        'RGB',
+        (bmpinfo['bmWidth'], bmpinfo['bmHeight']),
+        bmpstr, 'raw', 'BGRX', 0, 1)
+    while not screen_img.getpixel((1772, 980)) == screen_img.getpixel((1746, 980)) == screen_img.getpixel((1720, 980)) == screen_img.getpixel((1694, 980)) == screen_img.getpixel((1668, 980)):
+        hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
+        left, top, right, bot = win32gui.GetClientRect(hwnd)
+        w = right - left
+        h = bot - top
+        hwndDC = win32gui.GetWindowDC(hwnd)
+        mfcDC  = win32ui.CreateDCFromHandle(hwndDC)
+        saveDC = mfcDC.CreateCompatibleDC()
+        saveBitMap = win32ui.CreateBitmap()
+        saveBitMap.CreateCompatibleBitmap(mfcDC, w, h)
+        saveDC.SelectObject(saveBitMap)
+        windll.user32.PrintWindow(hwnd, saveDC.GetSafeHdc(), 2)
+        bmpinfo = saveBitMap.GetInfo()
+        bmpstr = saveBitMap.GetBitmapBits(True)
+        screen_img = Image.frombuffer(
+            'RGB',
+            (bmpinfo['bmWidth'], bmpinfo['bmHeight']),
+            bmpstr, 'raw', 'BGRX', 0, 1)
+        time.sleep(0.1)
+    calibrated_ammo_colour = screen_img.getpixel((1772, 980))
+    canvas.delete("calibration_text")
+    save_config()
 
 # load shit
 skullimg_path = os.path.join(script_dir, "Health_Bar_Skull.png")
@@ -93,23 +174,25 @@ except IndexError:
 canvas.create_oval(
 115, 956,
 165, 1007,
-fill=overhealcolour, outline="", tags="regen_meter", state="hidden"
-)
+fill=overhealcolour, outline="", tags="regen_meter", state="hidden")
 canvas.create_oval(
 122, 963,
 158, 1000,
-fill="black", outline="", tags="regen_meter", state="hidden"
-)
+fill="black", outline="", tags="regen_meter", state="hidden")
 
 # Create Crosshair
 canvas.create_oval(
-screen_width//2 - 3, screen_height//2 - 3,
-screen_width//2 + 2, screen_height//2 + 2, 
+screen_width//2 - 2.5, screen_height//2 - 2.5,
+screen_width//2 + 2.5, screen_height//2 + 2.5, 
 fill=crosshaircolour, outline=crosshairoutlinecolour, tags="crosshair")
 
 # keeps images in memory
 canvas.ammogauge_photo = ammophoto
 canvas.image = skullphoto
+
+# Create Ammo Gauge
+for i in range(0, 6):
+    canvas.create_image(1642+(26*i), 980, image=ammophoto, tags=(f"ammo{i}", "ammo"), state="hidden")
 
 # Create Skull
 canvas.create_image(140, 981, image=skullphoto, tags="skull_image")
@@ -158,35 +241,29 @@ def UpdateHUD():
         
         canvas.itemconfig("overlay", state="normal")
 
-        # Update Ammogauge
+        # Update Ammo and Crosshair
         if ammotoggle:
             for i in range(0, 6):
                 pixel_colour = screen_img.getpixel((1642+(26*i), 980))
-                hex_colour = '{:02X}{:02X}{:02X}'.format(*pixel_colour[:3])
-                if hex_colour == "ADFFAB" and not canvas.find_withtag(f"ammo{i}"):  # check for ammo
-                    canvas.create_image(1642+(26*i), 980, image=ammophoto, tags=(f"ammo{i}", "ammo"))
-                elif not hex_colour == "ADFFAB":
-                    canvas.delete(f"ammo{i}")
+                if pixel_colour == calibrated_ammo_colour and canvas.itemcget(f"ammo{i}", "state") == "hidden":  # check for ammo
+                    canvas.itemconfig(f"ammo{i}", state="normal")
+                elif not pixel_colour == calibrated_ammo_colour:
+                    canvas.itemconfig(f"ammo{i}", state="hidden")
+                    canvas.itemconfig("numberammo", state="hidden")
+                    canvas.itemconfig("crosshair", state="hidden")
                 else:
-                    break
-            canvas.itemconfig("ammo", state="normal")
-                    
-        # Update Number Based Ammo and Crosshair
-        if canvas.find_withtag("ammo"):
-            if numberammotoggle:
-                ammocount = len(canvas.find_withtag("ammo"))
-                canvas.itemconfig("numberammo", state="normal", text=f"{ammocount}/5")
-            if crosshairtoggle:
-                canvas.itemconfig("crosshair", state="normal")
-        else:
-            canvas.itemconfig("numberammo", state="hidden")
-            canvas.itemconfig("crosshair", state="hidden")
+                    if numberammotoggle:
+                        ammocount = 6-i
+                        canvas.itemconfig("numberammo", state="normal", text=f"{ammocount}/5")
+                    if crosshairtoggle:
+                        canvas.itemconfig("crosshair", state="normal")
+                    break            
             
         #Update Healthbar
-        pixel_colour = screen_img.getpixel((171, 975))
-        hex_colour = '{:02X}{:02X}{:02X}'.format(*pixel_colour[:3])
+        pixel_colour = screen_img.getpixel((169, 977))
+        control_colour = screen_img.getpixel((172, 976))
 
-        if hex_colour in {"3EDE7F", "ED3340", "3EDE7E", "EB3340"}:
+        if pixel_colour == screen_img.getpixel((141, 954)) == (0, 0, 0) != screen_img.getpixel((170, 977)):
             if skulltoggle:
                 canvas.itemconfig("skull_image", state="normal")
                 
@@ -200,12 +277,12 @@ def UpdateHUD():
                 canvas.itemconfig("regen_meter", state="normal")
                 
             if healthbartoggle:
-                canvas.itemconfig("health", state="normal")    
+                canvas.itemconfig("health", state="normal")
+                
                 # Update Health
                 for hp in range(0, 100):
                     pixel_colour = screen_img.getpixel((385-(2*hp), 984))
-                    hex_colour = '{:02X}{:02X}{:02X}'.format(*pixel_colour[:3])
-                    if hex_colour in {"43EF88", "FF3745", "43EF88", "FF3745"}:
+                    if pixel_colour == control_colour and pixel_colour != (0, 0, 0):
                         canvas.coords("health",
                         167, 974,  # Top-left
                         182, 989,  # Bottom-left
