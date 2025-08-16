@@ -15,7 +15,7 @@ lowhealthvar = 70
 lowhealthcolour = "#FF3700"
 healthcolour = "#43EF88"
 overhealcolour = "#43EF88"
-Regenbgcolour = "#353535"
+regenbgcolour = "#353535"
 numberhealthcolour = "#FFFFFF"
 numberammocolour = "#FFFFFF"
 numberregencolour = "#FFFFFF"
@@ -66,7 +66,7 @@ def save_config():
         "lowhealthcolour": lowhealthcolour,
         "healthcolour": healthcolour,
         "overhealcolour": overhealcolour,
-        "Regenbgcolour": Regenbgcolour,
+        "regenbgcolour": regenbgcolour,
         "numberhealthcolour": numberhealthcolour,
         "numberammocolour": numberammocolour,
         "numberregencolour": numberregencolour,
@@ -203,7 +203,7 @@ except IndexError:
 canvas.create_oval(
 114, 954,
 168, 1007,
-fill=Regenbgcolour, outline="", tags="regen_meter", state="hidden")
+fill=regenbgcolour, outline="", tags="regen_meter", state="hidden")
 arcid = canvas.create_arc(
     141 - 26, 982 - 26, 141 + 26, 982 + 26,
     start=88,
