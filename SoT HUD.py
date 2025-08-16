@@ -5,15 +5,16 @@ import keyboard
 import os
 import json
 import time
+import math
 import numpy as np
 import tkinter as tk
 from ctypes import windll
 from PIL import Image, ImageTk, ImageGrab
 
 lowhealthvar = 70
-lowhealthcolour = "#FF0000"
-healthcolour = "#FFFF00"
-overhealcolour = "#00FF00"
+lowhealthcolour = "#FF3700"
+healthcolour = "#43EF88"
+overhealcolour = "#FF0000"
 numberhealthcolour = "#FFFFFF"
 numberammocolour = "#FFFFFF"
 crosshaircolour = "#FFFFFF"
@@ -30,6 +31,8 @@ regentoggle = True
 numberhealthtoggle = True
 numberammotoggle = True
 calibrated_ammo_colour = (173, 255, 171)
+minregencolour = [0, 106, 0]
+maxregencolour = [76, 239, 186]
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 config_path = os.path.join(script_dir, "config.json")
@@ -130,14 +133,23 @@ except NameError:
     save_config()
 
 # load shit
-skullimg_path = os.path.join(script_dir, "Health_Bar_Skull.png")
-fullskullimg = Image.open(skullimg_path)
-scaledskullimg = fullskullimg.resize((38, 41), Image.NEAREST)
-skullarr = np.array(scaledskullimg, dtype=np.uint16)
-skullarr[:, :, :3] += 2
-np.clip(skullarr, 0, 255, out=skullarr)
-skullimg_corrected = Image.fromarray(skullarr.astype(np.uint8))
-skullphoto = ImageTk.PhotoImage(skullimg_corrected)
+green_skull_path = os.path.join(script_dir, "Health_Bar_Skull_Green.png")
+green_skull_img = Image.open(green_skull_path)
+scaled_green_skull_img = green_skull_img.resize((38, 41), Image.NEAREST)
+green_skull_arr = np.array(scaled_green_skull_img, dtype=np.uint16)
+green_skull_arr[:, :, :3] += 2
+np.clip(green_skull_arr, 0, 255, out=green_skull_arr)
+green_skull_corrected = Image.fromarray(green_skull_arr.astype(np.uint8))
+green_skull_photo = ImageTk.PhotoImage(green_skull_corrected)
+
+red_skull_path = os.path.join(script_dir, "Health_Bar_Skull_Red.png")
+red_skull_img = Image.open(red_skull_path)
+scaled_red_skull_img = red_skull_img.resize((38, 41), Image.NEAREST)
+red_skull_arr = np.array(scaled_red_skull_img, dtype=np.uint16)
+red_skull_arr[:, :, :3] += 2
+np.clip(red_skull_arr, 0, 255, out=red_skull_arr)
+red_skull_corrected = Image.fromarray(red_skull_arr.astype(np.uint8))
+red_skull_photo = ImageTk.PhotoImage(red_skull_corrected)
 
 ammogauge_path = os.path.join(script_dir, "ammogauge-pistol-ammunition.png")
 ammogauge_img = Image.open(ammogauge_path)
@@ -148,14 +160,23 @@ np.clip(ammogauge_arr, 0, 255, out=ammogauge_arr)
 ammogauge_corrected = Image.fromarray(ammogauge_arr.astype(np.uint8))
 ammophoto = ImageTk.PhotoImage(ammogauge_corrected)
 
-healthbar_path = os.path.join(script_dir, "Health_Bar_Decoration.png")
-healthbar_img = Image.open(healthbar_path)
-scaled_healthbar_img = healthbar_img.resize((320, 80), Image.NEAREST)
-healthbar_arr = np.array(scaled_healthbar_img, dtype=np.uint16)
-healthbar_arr[:, :, :3] += 2
-np.clip(healthbar_arr, 0, 255, out=healthbar_arr)
-healthbar_corrected = Image.fromarray(healthbar_arr.astype(np.uint8))
-healthbarphoto = ImageTk.PhotoImage(healthbar_corrected)
+healthbar_frame_path = os.path.join(script_dir, "Health_Bar_BG_Frame.png")
+healthbar_frame_img = Image.open(healthbar_frame_path)
+scaled_healthbar_frame_img = healthbar_frame_img.resize((315, 100), Image.NEAREST)
+healthbar_frame_arr = np.array(scaled_healthbar_frame_img, dtype=np.uint16)
+healthbar_frame_arr[:, :, :3] += 2
+np.clip(healthbar_frame_arr, 0, 255, out=healthbar_frame_arr)
+healthbar_frame_corrected = Image.fromarray(healthbar_frame_arr.astype(np.uint8))
+healthbar_frame_photo = ImageTk.PhotoImage(healthbar_frame_corrected)
+
+regen_skull_path = os.path.join(script_dir, "Regen_Meter_Skull.png")
+regen_skull_img = Image.open(regen_skull_path)
+scaled_regen_skull_img = regen_skull_img.resize((60, 60), Image.NEAREST)
+regen_skull_arr = np.array(scaled_regen_skull_img, dtype=np.uint16)
+regen_skull_arr[:, :, :3] += 2
+np.clip(regen_skull_arr, 0, 255, out=regen_skull_arr)
+regen_skull_corrected = Image.fromarray(regen_skull_arr.astype(np.uint8))
+regen_skull_photo = ImageTk.PhotoImage(regen_skull_corrected)
 
 overlay_path = os.path.join(script_dir, "General_Overlay.png")
 overlay_img = Image.open(overlay_path)
@@ -175,10 +196,7 @@ canvas.create_oval(
 115, 956,
 165, 1007,
 fill=overhealcolour, outline="", tags="regen_meter", state="hidden")
-canvas.create_oval(
-122, 963,
-158, 1000,
-fill="black", outline="", tags="regen_meter", state="hidden")
+canvas.create_image(141, 982, image=regen_skull_photo, tags="regen_meter", state="hidden")
 
 # Create Crosshair
 canvas.create_oval(
@@ -186,16 +204,13 @@ screen_width//2 - 2.5, screen_height//2 - 2.5,
 screen_width//2 + 2.5, screen_height//2 + 2.5, 
 fill=crosshaircolour, outline=crosshairoutlinecolour, tags="crosshair")
 
-# keeps images in memory
-canvas.ammogauge_photo = ammophoto
-canvas.image = skullphoto
-
 # Create Ammo Gauge
 for i in range(0, 6):
     canvas.create_image(1642+(26*i), 980, image=ammophoto, tags=(f"ammo{i}", "ammo"), state="hidden")
 
 # Create Skull
-canvas.create_image(140, 981, image=skullphoto, tags="skull_image")
+canvas.create_image(140, 981, image=green_skull_photo, tags="green_skull_image", state="hidden")
+canvas.create_image(140, 981, image=red_skull_photo, tags="red_skull_image", state="hidden")
 
 #Create Healthbar
 canvas.create_polygon(
@@ -204,9 +219,7 @@ canvas.create_polygon(
 393, 990,  # Bottom-right corner
 380, 975,  # Top-right corner
 outline="", tags="health")
-
-# Create Healthbar Decoration
-canvas.create_image(249, 982, image=healthbarphoto, tags="healthbardecoration")
+canvas.create_image(256, 982, image=healthbar_frame_photo, tags="health_bar_bg")
 
 # Number Based Health
 canvas.create_text(217, 950, fill=numberhealthcolour, font=(font, hpsize), tags="numberhealth")
@@ -264,23 +277,48 @@ def UpdateHUD():
         control_colour = screen_img.getpixel((172, 976))
 
         if pixel_colour == screen_img.getpixel((141, 954)) == (0, 0, 0) != screen_img.getpixel((170, 977)):
-            if skulltoggle:
-                canvas.itemconfig("skull_image", state="normal")
                 
             if numberhealthtoggle:
                 canvas.itemconfig("numberhealth", state="normal")
                 
             if healthbardecotoggle:
-                canvas.itemconfig("healthbardecoration", state="normal")
+                canvas.itemconfig("health_bar_bg", state="normal")
                 
             if regentoggle:
-                canvas.itemconfig("regen_meter", state="normal")
+                # canvas.itemconfig("regen_meter", state="normal")
+                for i in range(100):
+                    theta = (2 * math.pi / 100) * i  # divide circle into 'steps' points
+                    x = int(141 + 23 * math.cos(theta))
+                    y = int(982 + 23 * math.sin(theta))
+                    pixel_colour = screen_img.getpixel((x, y))
+                    if pixel_colour[0] <= maxregencolour[0] and minregencolour[1] <= pixel_colour[1] <= maxregencolour[1] and pixel_colour[2] <= maxregencolour[2]:
+                        print(f"Regen Pixel: {len(canvas.find_withtag('regen_meter'))}")
+                        canvas.create_arc(
+                            141 + 26, 982 + 26, 141 - 26, 982 - 26,
+                            start=-i * (360 / 100),
+                            extent=360 / 100,
+                            style="pieslice",
+                            outline="",
+                            fill=overhealcolour,
+                            tags="regen_meter", state="normal"
+                        )
+                    # debugging
+                    # for i in range(3):
+                    #     if pixel_colour[i] < minregencolour[i]:
+                    #         minregencolour[i] = pixel_colour[i]
+                            
+                    #     if pixel_colour[i] > maxregencolour[i]:
+                    #         maxregencolour[i] = pixel_colour[i]
+                            
+                    # print(f"min:{minregencolour} max:{maxregencolour}")
+                    # canvas.create_rectangle(
+                    #     x,y,x,y, fill="white", outline="")
                 
             if healthbartoggle:
                 canvas.itemconfig("health", state="normal")
                 
                 # Update Health
-                for hp in range(0, 100):
+                for hp in range(100):
                     pixel_colour = screen_img.getpixel((385-(2*hp), 984))
                     if pixel_colour == control_colour and pixel_colour != (0, 0, 0):
                         canvas.coords("health",
@@ -294,13 +332,21 @@ def UpdateHUD():
                         else:
                             canvas.itemconfig("health", fill=healthcolour)
                         canvas.itemconfig("numberhealth", text=f"{100-hp}/100")
-
+                        
+                        if skulltoggle:
+                            if 100-hp <= lowhealthvar:
+                                canvas.itemconfig("red_skull_image", state="normal")
+                                canvas.itemconfig("green_skull_image", state="hidden")
+                            else:
+                                canvas.itemconfig("red_skull_image", state="hidden")
+                                canvas.itemconfig("green_skull_image", state="normal")
                         break
         else:
-            canvas.itemconfig("skull_image", state="hidden")
+            canvas.itemconfig("red_skull_image", state="hidden")
+            canvas.itemconfig("green_skull_image", state="hidden")
             canvas.itemconfig("health", state="hidden")
             canvas.itemconfig("numberhealth", state="hidden")  
-            canvas.itemconfig("healthbardecoration", state="hidden")
+            canvas.itemconfig("health_bar_bg", state="hidden")
             canvas.itemconfig("regen_meter", state="hidden")  
 
         # Cleanup
