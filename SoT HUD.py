@@ -14,35 +14,35 @@ import tkinter as tk
 from ctypes import windll
 from PIL import Image, ImageTk
 
-lowhealthvar = 70
-lowhealthcolour = "#FF3700"
-healthcolour = "#43EF88"
-overhealcolour = "#43EF88"
-regenbgcolour = "#353535"
-numberhealthcolour = "#FFFFFF"
-numberammocolour = "#FFFFFF"
-numberregencolour = "#FFFFFF"
-crosshaircolour = "#FFFFFF"
-crosshairoutlinecolour = "#080808"
-font = "Arial"
-ammosize = 25
-hpsize = 25
-regensize = 25
-ammotoggle = True
-crosshairtoggle = True
-healthbartoggle = True
-healthbardecotoggle = True
-skulltoggle = True
-regentoggle = True
-numberhealthtoggle = True
-numberammotoggle = True
-numberregentoggle = True
-overlaytoggle = True
-calibrated_ammo_colour = (173, 255, 171)
-minregencolour = [0, 88, 0]
-maxregencolour = [76, 239, 186]
+lowhealthvar            = 70
+lowhealthcolour         = "#FF3700"
+healthcolour            = "#43EF88"
+overhealcolour          = "#43EF88"
+regenbgcolour           = "#353535"
+numberhealthcolour      = "#FFFFFF"
+numberammocolour        = "#FFFFFF"
+numberregencolour       = "#FFFFFF"
+crosshaircolour         = "#FFFFFF"
+crosshairoutlinecolour  = "#080808"
+font                    = "Arial"
+ammosize                = 25
+hpsize                  = 25
+regensize               = 25
+ammotoggle              = True
+crosshairtoggle         = True
+healthbartoggle         = True
+healthbardecotoggle     = True
+skulltoggle             = True
+regentoggle             = True
+overlaytoggle           = True
+numberhealthtoggle      = False
+numberammotoggle        = False
+numberregentoggle       = False
+calibrated_ammo_colour  = (173, 255, 171)
+minregencolour          = [0, 88, 0]
+maxregencolour          = [76, 239, 186]
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
+script_dir  = os.path.dirname(os.path.abspath(__file__))
 config_path = os.path.join(script_dir, "config.json")
 
 root = tk.Tk()
@@ -269,14 +269,6 @@ def UpdateHUD():
                     if i == 199:
                         canvas.itemconfig(arcid, state="hidden")
                         canvas.itemconfig("numberregen", text="0/200")
-
-                    # debugging
-                    # for i in range(3):
-                    #     if pixel_colour[i] < minregencolour[i]:
-                    #         minregencolour[i] = pixel_colour[i]                            
-                    #     if pixel_colour[i] > maxregencolour[i]:
-                    #         maxregencolour[i] = pixel_colour[i]                            
-                    # print(f"min:{minregencolour} max:{maxregencolour}")
                 
             # Update Health
             if healthbartoggle:
@@ -322,4 +314,3 @@ def UpdateHUD():
 UpdateHUD()
 keyboard.add_hotkey('f3', lambda: root.destroy()) #killswitch
 root.mainloop()
-
