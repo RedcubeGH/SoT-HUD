@@ -167,6 +167,7 @@ if regentoggle:
     arcid = canvas.create_arc(
         141 - 26, 982 - 26, 141 + 26, 982 + 26,
         start=88,
+        extent = 0,
         style="pieslice",
         outline="",
         fill=overhealcolour,
@@ -210,7 +211,7 @@ canvas.create_text(217, 950, fill=numberhealthcolour, font=(font, hpsize), tags=
 canvas.create_text(1680, 950, fill=numberammocolour, font=(font, ammosize), tags="numberammo")
 
 # Number Based Regen
-canvas.create_text(140, 910, fill=numberregencolour, text="0/200", font=(font, regensize), tags="numberregen")
+canvas.create_text(140, 910, fill=numberregencolour, text="0/200", font=(font, regensize), tags="numberregen", state="hidden")
 
 def UpdateHUD():
     hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
@@ -256,19 +257,20 @@ def UpdateHUD():
             # Update Overheal    
             if regentoggle:
                 canvas.itemconfig("regen_meter", state="normal")
-                for i in range(200):
-                    theta = (2 * math.pi / 200) * -(i+50)
-                    x = int(140 + 23 * math.cos(theta))
-                    y = int(982 + 23 * math.sin(theta))
-                    pixel_colour = screen_img.getpixel((x, y))
-                    if pixel_colour[0] <= maxregencolour[0] and minregencolour[1] <= pixel_colour[1] <= maxregencolour[1] and pixel_colour[2] <= maxregencolour[2]:
-                        overhealhp = 359.99-((i)*1.8)
-                        canvas.itemconfig(arcid, extent = -(overhealhp))
-                        canvas.itemconfig("numberregen", text=f"{200-i}/200")
-                        break
-                    if i == 199:
-                        canvas.itemconfig(arcid, state="hidden")
-                        canvas.itemconfig("numberregen", text="0/200")
+                control_colour = screen_img.getpixel((141, 958))
+                if control_colour[0] <= maxregencolour[0] and minregencolour[1] <= control_colour[1] <= maxregencolour[1] and control_colour[2] <= maxregencolour[2]:
+                    for i in range(200):
+                        theta = (2 * math.pi / 200) * -(i+50)
+                        x = int(140 + 23 * math.cos(theta))
+                        y = int(982 + 23 * math.sin(theta))
+                        pixel_colour = screen_img.getpixel((x, y))
+                        if pixel_colour[0] <= maxregencolour[0] and minregencolour[1] <= pixel_colour[1] <= maxregencolour[1] and pixel_colour[2] <= maxregencolour[2]:
+                            overhealhp = 359.99-((i)*1.8)
+                            canvas.itemconfig(arcid, extent = -(overhealhp))
+                            canvas.itemconfig("numberregen", text=f"{200-i}/200")
+                            break
+                        if i == 199:
+                            canvas.itemconfig(arcid, state="hidden")
                 
             # Update Health
             if healthbartoggle:
@@ -309,7 +311,7 @@ def UpdateHUD():
                 canvas.itemconfig(tag, state="hidden")
     else:
         canvas.itemconfig("all", state="hidden") 
-    root.after(8, UpdateHUD) #loop at 125 FPS
+    root.after(16, UpdateHUD) #loop at 125 FPS
 
 UpdateHUD()
 keyboard.add_hotkey('f3', lambda: root.destroy()) #killswitch
