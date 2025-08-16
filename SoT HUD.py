@@ -9,19 +9,22 @@ import math
 import numpy as np
 import tkinter as tk
 from ctypes import windll
-from PIL import Image, ImageTk, ImageGrab
+from PIL import Image, ImageTk
 
 lowhealthvar = 70
 lowhealthcolour = "#FF3700"
 healthcolour = "#43EF88"
-overhealcolour = "#FF0000"
+overhealcolour = "#43EF88"
+Regenbgcolour = "#353535"
 numberhealthcolour = "#FFFFFF"
 numberammocolour = "#FFFFFF"
+numberregencolour = "#FFFFFF"
 crosshaircolour = "#FFFFFF"
 crosshairoutlinecolour = "#080808"
 font = "Arial"
 ammosize = 25
 hpsize = 25
+regensize = 25
 ammotoggle = True
 crosshairtoggle = True
 healthbartoggle = True
@@ -30,8 +33,9 @@ skulltoggle = True
 regentoggle = True
 numberhealthtoggle = True
 numberammotoggle = True
+numberregentoggle = True
 calibrated_ammo_colour = (173, 255, 171)
-minregencolour = [0, 106, 0]
+minregencolour = [0, 88, 0]
 maxregencolour = [76, 239, 186]
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -62,13 +66,16 @@ def save_config():
         "lowhealthcolour": lowhealthcolour,
         "healthcolour": healthcolour,
         "overhealcolour": overhealcolour,
+        "Regenbgcolour": Regenbgcolour,
         "numberhealthcolour": numberhealthcolour,
         "numberammocolour": numberammocolour,
+        "numberregencolour": numberregencolour,
         "crosshaircolour": crosshaircolour,
         "crosshairoutlinecolour": crosshairoutlinecolour,
         "font": font,
         "ammosize": ammosize,
         "hpsize": hpsize,
+        "regensize": regensize,
         "ammotoggle": ammotoggle,
         "crosshairtoggle": crosshairtoggle,
         "healthbartoggle": healthbartoggle,
@@ -77,10 +84,11 @@ def save_config():
         "regentoggle": regentoggle,
         "numberhealthtoggle": numberhealthtoggle,
         "numberammotoggle": numberammotoggle,
+        "numberregentoggle": numberregentoggle,
         "calibrated_ammo_colour": calibrated_ammo_colour
     }
     with open(config_path, "w") as f:
-        json.dump(config_data, f)
+        json.dump(config_data, f, indent=4)
     
 # Check if ammo colour is calibrated
 try:
@@ -193,9 +201,18 @@ except IndexError:
     
 # Create Regen Meter
 canvas.create_oval(
-115, 956,
-165, 1007,
-fill=overhealcolour, outline="", tags="regen_meter", state="hidden")
+114, 954,
+168, 1007,
+fill=Regenbgcolour, outline="", tags="regen_meter", state="hidden")
+arcid = canvas.create_arc(
+    141 - 26, 982 - 26, 141 + 26, 982 + 26,
+    start=88,
+    style="pieslice",
+    outline="",
+    fill=overhealcolour,
+    tags="regen_meter",
+    state="hidden"
+)
 canvas.create_image(141, 982, image=regen_skull_photo, tags="regen_meter", state="hidden")
 
 # Create Crosshair
@@ -226,6 +243,9 @@ canvas.create_text(217, 950, fill=numberhealthcolour, font=(font, hpsize), tags=
 
 # Number Based Ammo
 canvas.create_text(1680, 950, fill=numberammocolour, font=(font, ammosize), tags="numberammo")
+
+# Number Based Regen
+canvas.create_text(140, 910, fill=numberregencolour, text="0/200", font=(font, regensize), tags="numberregen")
 
 def UpdateHUD():
     # only captures SoT
@@ -271,7 +291,7 @@ def UpdateHUD():
                     if crosshairtoggle:
                         canvas.itemconfig("crosshair", state="normal")
                     break            
-            
+        
         #Update Healthbar
         pixel_colour = screen_img.getpixel((169, 977))
         control_colour = screen_img.getpixel((172, 976))
@@ -284,35 +304,32 @@ def UpdateHUD():
             if healthbardecotoggle:
                 canvas.itemconfig("health_bar_bg", state="normal")
                 
+            if numberregentoggle:
+                canvas.itemconfig("numberregen", state="normal")
+                
             if regentoggle:
-                # canvas.itemconfig("regen_meter", state="normal")
-                for i in range(100):
-                    theta = (2 * math.pi / 100) * i  # divide circle into 'steps' points
-                    x = int(141 + 23 * math.cos(theta))
+                canvas.itemconfig("regen_meter", state="normal")
+                for i in range(200):
+                    theta = (2 * math.pi / 200) * -(i+50)
+                    x = int(140 + 23 * math.cos(theta))
                     y = int(982 + 23 * math.sin(theta))
                     pixel_colour = screen_img.getpixel((x, y))
                     if pixel_colour[0] <= maxregencolour[0] and minregencolour[1] <= pixel_colour[1] <= maxregencolour[1] and pixel_colour[2] <= maxregencolour[2]:
-                        print(f"Regen Pixel: {len(canvas.find_withtag('regen_meter'))}")
-                        canvas.create_arc(
-                            141 + 26, 982 + 26, 141 - 26, 982 - 26,
-                            start=-i * (360 / 100),
-                            extent=360 / 100,
-                            style="pieslice",
-                            outline="",
-                            fill=overhealcolour,
-                            tags="regen_meter", state="normal"
-                        )
+                        overhealhp = 359.99-((i)*1.8)
+                        canvas.itemconfig(arcid, extent = -(overhealhp))
+                        canvas.itemconfig("numberregen", text=f"{200-i}/200")
+                        break
+                    if i == 199:
+                        canvas.itemconfig(arcid, state="hidden")
+                        canvas.itemconfig("numberregen", text="0/200")
+
                     # debugging
                     # for i in range(3):
                     #     if pixel_colour[i] < minregencolour[i]:
-                    #         minregencolour[i] = pixel_colour[i]
-                            
+                    #         minregencolour[i] = pixel_colour[i]                            
                     #     if pixel_colour[i] > maxregencolour[i]:
-                    #         maxregencolour[i] = pixel_colour[i]
-                            
+                    #         maxregencolour[i] = pixel_colour[i]                            
                     # print(f"min:{minregencolour} max:{maxregencolour}")
-                    # canvas.create_rectangle(
-                    #     x,y,x,y, fill="white", outline="")
                 
             if healthbartoggle:
                 canvas.itemconfig("health", state="normal")
@@ -347,7 +364,8 @@ def UpdateHUD():
             canvas.itemconfig("health", state="hidden")
             canvas.itemconfig("numberhealth", state="hidden")  
             canvas.itemconfig("health_bar_bg", state="hidden")
-            canvas.itemconfig("regen_meter", state="hidden")  
+            canvas.itemconfig("regen_meter", state="hidden")
+            canvas.itemconfig("numberregen", state="hidden")
 
         # Cleanup
         win32gui.DeleteObject(saveBitMap.GetHandle())
