@@ -1,3 +1,6 @@
+# Project: SoT HUD
+# Author: Redcube
+
 import win32gui
 import win32con
 import win32ui
@@ -319,3 +322,4 @@ def UpdateHUD():
 UpdateHUD()
 keyboard.add_hotkey('f3', lambda: root.destroy()) #killswitch
 root.mainloop()
+
