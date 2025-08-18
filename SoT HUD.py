@@ -215,7 +215,7 @@ if healthbardecotoggle:
 # Number Based Health
 if numberhealthtoggle:
     print("Number Based Health initialized")
-    canvas.create_text(170, 980, fill=numberhealthcolour, font=(font, hpsize), anchor="sw", tags="numberhealth")
+    canvas.create_text(170, 973, fill=numberhealthcolour, font=(font, hpsize), anchor="sw", tags="numberhealth")
 
 # Number Based Ammo
 if numberammotoggle:
@@ -334,3 +334,4 @@ def UpdateHUD():
 UpdateHUD()
 keyboard.add_hotkey('f3', lambda: root.destroy()) #killswitch
 root.mainloop()
+
