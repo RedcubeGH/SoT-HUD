@@ -9,41 +9,66 @@ import os
 import json
 import time
 import math
+import webbrowser
 import numpy as np
 import tkinter as tk
 from ctypes import windll
 from PIL import Image, ImageTk
 
+script_dir  = os.path.dirname(os.path.abspath(__file__))
+config_path = os.path.join(script_dir, "config.json")
+
 lowhealthvar            = 70
-lowhealthcolour         = "#FF0000"
-healthcolour            = "#FFFFFF"
-overhealcolour          = "#FF0000"
-regenbgcolour           = "#FFFFFF"
+lowhealthcolour         = "#FF3745"
+healthcolour            = "#43EF88"
+overhealcolour          = "#4CEF7E"
+regenbgcolour           = "#676767"
 numberhealthcolour      = "#FFFFFF"
 numberammocolour        = "#FFFFFF"
 numberregencolour       = "#FFFFFF"
 crosshaircolour         = "#FFFFFF"
 crosshairoutlinecolour  = "#080808"
-font                    = "Arial"
+font                    = "Times New Roman"
 ammosize                = 25
 hpsize                  = 25
 regensize               = 25
-ammotoggle              = True
-crosshairtoggle         = True
-healthbartoggle         = True
-healthbardecotoggle     = True
-skulltoggle             = True
-regentoggle             = True
-overlaytoggle           = True
-numberhealthtoggle      = True
-numberammotoggle        = True
-numberregentoggle       = True
-calibrated_ammo_colour  = (173, 255, 171)
+ammotoggle              = False
+crosshairtoggle         = False
+healthbartoggle         = False
+healthbardecotoggle     = False
+skulltoggle             = False
+regentoggle             = False
+overlaytoggle           = False
+numberhealthtoggle      = False
+numberammotoggle        = False
+numberregentoggle       = False
+xoffsethealth           = 0
+yoffsethealth           = 0
+xoffsetammo             = 0
+yoffsetammo             = 0
+xoffsetregen            = 0
+yoffsetregen            = 0
+healthprefix            = ""
+healthsuffix            = "/100"
+ammoprefix              = ""
+ammosuffix              = "/5"   
+regenprefix             = ""
+regensuffix             = ""
+calibrated_ammo_colour  = (0, 0, 0)
+
+# constants for regen meter
 minregencolour          = [0, 88, 0]
 maxregencolour          = [76, 239, 186]
+minhpcolour             = [0, 55, 0]
+maxhpcolour             = [255, 239, 244]
 
-script_dir  = os.path.dirname(os.path.abspath(__file__))
-config_path = os.path.join(script_dir, "config.json")
+# Load configuration from config.json
+with open(config_path, "r") as f:
+    config_data = json.load(f)
+    for key, value in config_data.items():
+        if key in globals():
+            globals()[key] = value
+calibrated_ammo_colour = tuple(calibrated_ammo_colour)
 
 root = tk.Tk()
 root.attributes("-topmost", True)
@@ -88,9 +113,22 @@ def save_config():
         "healthbardecotoggle": healthbardecotoggle,
         "skulltoggle": skulltoggle,
         "regentoggle": regentoggle,
+        "overlaytoggle": overlaytoggle,
         "numberhealthtoggle": numberhealthtoggle,
         "numberammotoggle": numberammotoggle,
         "numberregentoggle": numberregentoggle,
+        "xoffsethealth": xoffsethealth,
+        "yoffsethealth": yoffsethealth,
+        "xoffsetammo": xoffsetammo,
+        "yoffsetammo": yoffsetammo,
+        "xoffsetregen": xoffsetregen,
+        "yoffsetregen": yoffsetregen,
+        "healthprefix": healthprefix,
+        "healthsuffix": healthsuffix,
+        "ammoprefix": ammoprefix,
+        "ammosuffix": ammosuffix,
+        "regenprefix": regenprefix,
+        "regensuffix": regensuffix,
         "calibrated_ammo_colour": calibrated_ammo_colour
     }
     with open(config_path, "w") as f:
@@ -114,9 +152,7 @@ def capture_client(hwnd):
     return img
     
 # check if ammo colour is calibrated
-try:
-    save_config()
-except NameError:
+if calibrated_ammo_colour == (0, 0, 0):
     canvas.create_text(
         screen_width//2, screen_height//2,
         text="Pull out a gun with full ammo to calibrate ammo colour",
@@ -154,7 +190,6 @@ healthbar_frame_photo, healthbardecotoggle  = load_image("Health_Bar_BG_Frame.pn
 regen_skull_photo, regentoggle              = load_image("Regen_Meter_Skull.png",           (60,60), regentoggle)
 overlay_photo, overlaytoggle                = load_image("General_Overlay.png",             toggle=overlaytoggle)
 
-
 # Create Overlay
 if overlaytoggle:
     print("Overlay initialized")
@@ -168,13 +203,12 @@ if regentoggle:
     168, 1007,
     fill=regenbgcolour, outline="", tags="regen_meter", state="hidden")
     arcid = canvas.create_arc(
-        141 - 26, 982 - 26, 141 + 26, 982 + 26,
+        141 - 26, 981 - 26, 141 + 26, 982 + 26,
         start=88,
         extent = 0,
         style="pieslice",
         outline="",
         fill=overhealcolour,
-        tags="regen_meter",
         state="hidden"
     )
     canvas.create_image(141, 982, image=regen_skull_photo, tags="regen_meter", state="hidden")
@@ -215,17 +249,17 @@ if healthbardecotoggle:
 # Number Based Health
 if numberhealthtoggle:
     print("Number Based Health initialized")
-    canvas.create_text(170, 973, fill=numberhealthcolour, font=(font, hpsize), anchor="sw", tags="numberhealth")
+    canvas.create_text(170 + xoffsethealth, 973 + yoffsethealth, fill=numberhealthcolour, font=(font, hpsize), anchor="sw", tags="numberhealth")
 
 # Number Based Ammo
 if numberammotoggle:
     print("Number Based Ammo initialized")
-    canvas.create_text(1620, 980, fill=numberammocolour, font=(font, ammosize), anchor="e", tags="numberammo")
+    canvas.create_text(1620 + xoffsetammo, 980 + yoffsetammo, fill=numberammocolour, font=(font, ammosize), anchor="e", tags="numberammo")
 
 # Number Based Regen
 if numberregentoggle:
     print("Number Based Regen initialized")
-    canvas.create_text(105, 980, fill=numberregencolour, text="0", font=(font, regensize), tags="numberregen", anchor="e", state="hidden")
+    canvas.create_text(100 + xoffsetregen, 980 + yoffsetregen, fill=numberregencolour, text=f"{regenprefix}0{regensuffix}", font=(font, regensize), tags="numberregen", anchor="e", state="hidden")
 
 def UpdateHUD():
     hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
@@ -234,7 +268,7 @@ def UpdateHUD():
         
         if overlaytoggle:
             canvas.itemconfig("overlay", state="normal")
-
+        
         # Update Ammo and Crosshair
         if ammotoggle or crosshairtoggle or numberammotoggle:
             for i in range(0, 6):
@@ -249,17 +283,18 @@ def UpdateHUD():
                 else:
                     if numberammotoggle:
                         ammocount = 6-i
-                        canvas.itemconfig("numberammo", state="normal", text=f"{ammocount}/5")
+                        canvas.itemconfig("numberammo", state="normal", text=f"{ammoprefix}{ammocount}{ammosuffix}")
                     if crosshairtoggle:
                         canvas.itemconfig("crosshair", state="normal")
                     break            
-        
+
         # Update Healthbar
         pixel_colour = screen_img.getpixel((169, 977))
         control_colour = screen_img.getpixel((172, 976))
-
-        if pixel_colour == screen_img.getpixel((141, 954)) == (0, 0, 0) != screen_img.getpixel((170, 977)):
-                
+        bar_colour = screen_img.getpixel((172, 976))
+        
+        if pixel_colour == screen_img.getpixel((141, 954)) == (0, 0, 0) != bar_colour and bar_colour[1] >= 55:
+                       
             if numberhealthtoggle:
                 canvas.itemconfig("numberhealth", state="normal")
                 
@@ -284,17 +319,17 @@ def UpdateHUD():
                         if pixel_colour[0] <= maxregencolour[0] and minregencolour[1] <= pixel_colour[1] <= maxregencolour[1] and pixel_colour[2] <= maxregencolour[2]:
                             if regentoggle:
                                 overhealhp = 359.99-((i)*1.8)
-                                canvas.itemconfig(arcid, extent = -(overhealhp))
-                            canvas.itemconfig("numberregen", text=f"{200-i}")
+                                canvas.itemconfig(arcid, extent = -(overhealhp), state="normal")
+                            canvas.itemconfig("numberregen", text=f"{regenprefix}{200-i}{regensuffix}")
+                            if i >= 198:
+                                canvas.itemconfig(arcid, state="hidden")
+                                canvas.itemconfig("numberregen", text=f"{regenprefix}0{regensuffix}")
                             break
-                        if i == 199:
-                            canvas.itemconfig(arcid, state="hidden")
-                            canvas.itemconfig("numberregen", text="0")
                 
             # Update Health
             for hp in range(100):
                 pixel_colour = screen_img.getpixel((385-(2*hp), 984))
-                if pixel_colour == control_colour and pixel_colour != (0, 0, 0):
+                if pixel_colour == control_colour and pixel_colour[1] >= 55:
                     if healthbartoggle:
                         canvas.coords("health",
                         167, 974,  # Top-left
@@ -306,7 +341,7 @@ def UpdateHUD():
                             canvas.itemconfig("health", fill=lowhealthcolour)                
                         else:
                             canvas.itemconfig("health", fill=healthcolour)
-                    canvas.itemconfig("numberhealth", text=f"{100-hp}/100")
+                    canvas.itemconfig("numberhealth", text=f"{healthprefix}{100-hp}{healthsuffix}")
                     
                     if skulltoggle:
                         if 100-hp <= lowhealthvar:
@@ -324,14 +359,15 @@ def UpdateHUD():
                 "numberhealth",
                 "health_bar_bg",
                 "regen_meter",
-                "numberregen"
+                "numberregen",
+                arcid
             ]:
                 canvas.itemconfig(tag, state="hidden")
     else:
         canvas.itemconfig("all", state="hidden") 
-    root.after(16, UpdateHUD) #loop at 125 FPS
+    root.after(16, UpdateHUD)
 
 UpdateHUD()
 keyboard.add_hotkey('f3', lambda: root.destroy()) #killswitch
+keyboard.add_hotkey("insert", lambda: webbrowser.open("http://localhost:3000"))
 root.mainloop()
-
