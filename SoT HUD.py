@@ -262,115 +262,119 @@ if numberregentoggle:
     print("Number Based Regen initialized")
     canvas.create_text(100 + xoffsetregen, 980 + yoffsetregen, fill=numberregencolour, text=f"{regenprefix}0{regensuffix}", font=(font, regensize), tags="numberregen", anchor="e", state="hidden")
 
+print(" Game not running", end="\r", flush=True)
+
 def UpdateHUD():
     hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
     if hwnd == win32gui.GetForegroundWindow():
-        screen_img = capture_client(hwnd)
-        
-        if overlaytoggle:
-            canvas.itemconfig("overlay", state="normal")
-        
-        # Update Ammo and Crosshair
-        if ammotoggle or crosshairtoggle or numberammotoggle:
-            for i in range(0, 6):
-                pixel_colour = screen_img.getpixel((1642+(26*i), 980))
-                if pixel_colour == calibrated_ammo_colour and canvas.itemcget(f"ammo{i}", "state") == "hidden":  # check for ammo
-                    if ammotoggle:
-                        canvas.itemconfig(f"ammo{i}", state="normal")
-                elif not pixel_colour == calibrated_ammo_colour:
-                    canvas.itemconfig(f"ammo{i}", state="hidden")
-                    canvas.itemconfig("numberammo", state="hidden")
-                    canvas.itemconfig("crosshair", state="hidden")
-                else:
-                    if numberammotoggle:
-                        ammocount = 6-i
-                        canvas.itemconfig("numberammo", state="normal", text=f"{ammoprefix}{ammocount}{ammosuffix}")
-                    if crosshairtoggle:
-                        canvas.itemconfig("crosshair", state="normal")
-                    break            
+        try:
+            screen_img = capture_client(hwnd)            
+            if overlaytoggle:
+                canvas.itemconfig("overlay", state="normal")
+            
+            # Update Ammo and Crosshair
+            if ammotoggle or crosshairtoggle or numberammotoggle:
+                for i in range(0, 6):
+                    pixel_colour = screen_img.getpixel((1642+(26*i), 980))
+                    if pixel_colour == calibrated_ammo_colour and canvas.itemcget(f"ammo{i}", "state") == "hidden":  # check for ammo
+                        if ammotoggle:
+                            canvas.itemconfig(f"ammo{i}", state="normal")
+                    elif not pixel_colour == calibrated_ammo_colour:
+                        canvas.itemconfig(f"ammo{i}", state="hidden")
+                        canvas.itemconfig("numberammo", state="hidden")
+                        canvas.itemconfig("crosshair", state="hidden")
+                    else:
+                        if numberammotoggle:
+                            ammocount = 6-i
+                            canvas.itemconfig("numberammo", state="normal", text=f"{ammoprefix}{ammocount}{ammosuffix}")
+                        if crosshairtoggle:
+                            canvas.itemconfig("crosshair", state="normal")
+                        break            
+            
+            print(" Game found updating HUD                                                                                         ", end="\r", flush=True)
+            
+            # Update Healthbar
+            pixel_colour = screen_img.getpixel((169, 977))
+            control_colour = screen_img.getpixel((172, 976))
+            bar_colour = screen_img.getpixel((172, 976))
+            
+            if pixel_colour == screen_img.getpixel((141, 954)) == (0, 0, 0) != bar_colour and bar_colour[1] >= 55:
 
-        # Update Healthbar
-        pixel_colour = screen_img.getpixel((169, 977))
-        control_colour = screen_img.getpixel((172, 976))
-        bar_colour = screen_img.getpixel((172, 976))
-        
-        if pixel_colour == screen_img.getpixel((141, 954)) == (0, 0, 0) != bar_colour and bar_colour[1] >= 55:  
-                       
-            if numberhealthtoggle:
-                canvas.itemconfig("numberhealth", state="normal")
-                
-            if healthbardecotoggle:
-                canvas.itemconfig("health_bar_bg", state="normal")
-                
-            if numberregentoggle:
-                canvas.itemconfig("numberregen", state="normal")
-                
-            if healthbartoggle:
-                canvas.itemconfig("health", state="normal")
-              
-            if regentoggle or numberregentoggle:
-                canvas.itemconfig("regen_meter", state="normal")
-                regen_control_colour = screen_img.getpixel((141, 958))
-                if regen_control_colour[0] <= maxregencolour[0] and minregencolour[1] <= regen_control_colour[1] <= maxregencolour[1] and regen_control_colour[2] <= maxregencolour[2]:
-                    for i in range(200):
-                        theta = (2 * math.pi / 200) * -(i+50)
-                        x = int(140 + 23 * math.cos(theta))
-                        y = int(982 + 23 * math.sin(theta))
-                        pixel_colour = screen_img.getpixel((x, y))
-                        if pixel_colour[0] <= maxregencolour[0] and minregencolour[1] <= pixel_colour[1] <= maxregencolour[1] and pixel_colour[2] <= maxregencolour[2]:
-                            if regentoggle:
-                                overhealhp = 359.99-((i)*1.8)
-                                canvas.itemconfig(arcid, extent = -(overhealhp), state="normal")
-                            canvas.itemconfig("numberregen", text=f"{regenprefix}{200-i}{regensuffix}")
-                            if i >= 198:
-                                canvas.itemconfig(arcid, state="hidden")
-                                canvas.itemconfig("numberregen", text=f"{regenprefix}0{regensuffix}")
-                            break
-                
-            # Update Health
-            for hp in range(100):
-                pixel_colour = screen_img.getpixel((385-(2*hp), 984))
-                if pixel_colour == control_colour and pixel_colour[1] >= 55:
-                    if healthbartoggle:
-                        canvas.coords("health",
-                        167, 974,  # Top-left
-                        182, 989,  # Bottom-left
-                        395-(((395-191)/100)*hp), 990,  # Bottom-right
-                        380-(((380-176)/100)*hp), 974   # Top-right
-                        )
-                        if 100-hp <= lowhealthvar:
-                            canvas.itemconfig("health", fill=lowhealthcolour)                
-                        else:
-                            canvas.itemconfig("health", fill=healthcolour)
-                    canvas.itemconfig("numberhealth", text=f"{healthprefix}{100-hp}{healthsuffix}")
+                if numberhealthtoggle:
+                    canvas.itemconfig("numberhealth", state="normal")
                     
-                    if skulltoggle:
-                        if 100-hp <= lowhealthvar:
-                            canvas.itemconfig("red_skull_image", state="normal")
-                            canvas.itemconfig("green_skull_image", state="hidden")
-                        else:
-                            canvas.itemconfig("red_skull_image", state="hidden")
-                            canvas.itemconfig("green_skull_image", state="normal")
-                    break
-        else:
-            for tag in [
-                "red_skull_image",
-                "green_skull_image",
-                "health",
-                "numberhealth",
-                "health_bar_bg",
-                "regen_meter",
-                "numberregen",
-                arcid
-            ]:
-                canvas.itemconfig(tag, state="hidden")
+                if healthbardecotoggle:
+                    canvas.itemconfig("health_bar_bg", state="normal")
+                    
+                if numberregentoggle:
+                    canvas.itemconfig("numberregen", state="normal")
+                    
+                if healthbartoggle:
+                    canvas.itemconfig("health", state="normal")
+                
+                if regentoggle or numberregentoggle:
+                    canvas.itemconfig("regen_meter", state="normal")
+                    regen_control_colour = screen_img.getpixel((141, 958))
+                    if regen_control_colour[0] <= maxregencolour[0] and minregencolour[1] <= regen_control_colour[1] <= maxregencolour[1] and regen_control_colour[2] <= maxregencolour[2]:
+                        for i in range(200):
+                            theta = (2 * math.pi / 200) * -(i+50)
+                            x = int(140 + 23 * math.cos(theta))
+                            y = int(982 + 23 * math.sin(theta))
+                            pixel_colour = screen_img.getpixel((x, y))
+                            if pixel_colour[0] <= maxregencolour[0] and minregencolour[1] <= pixel_colour[1] <= maxregencolour[1] and pixel_colour[2] <= maxregencolour[2]:
+                                if regentoggle:
+                                    overhealhp = 359.99-((i)*1.8)
+                                    canvas.itemconfig(arcid, extent = -(overhealhp), state="normal")
+                                canvas.itemconfig("numberregen", text=f"{regenprefix}{200-i}{regensuffix}")
+                                if i >= 198:
+                                    canvas.itemconfig(arcid, state="hidden")
+                                    canvas.itemconfig("numberregen", text=f"{regenprefix}0{regensuffix}")
+                                break
+                    
+                # Update Health
+                for hp in range(100):
+                    pixel_colour = screen_img.getpixel((385-(2*hp), 984))
+                    if pixel_colour == control_colour and pixel_colour[1] >= 55:
+                        if healthbartoggle:
+                            canvas.coords("health",
+                            167, 974,  # Top-left
+                            182, 989,  # Bottom-left
+                            395-(((395-191)/100)*hp), 990,  # Bottom-right
+                            380-(((380-176)/100)*hp), 974   # Top-right
+                            )
+                            if 100-hp <= lowhealthvar:
+                                canvas.itemconfig("health", fill=lowhealthcolour)                
+                            else:
+                                canvas.itemconfig("health", fill=healthcolour)
+                        canvas.itemconfig("numberhealth", text=f"{healthprefix}{100-hp}{healthsuffix}")
+                        
+                        if skulltoggle:
+                            if 100-hp <= lowhealthvar:
+                                canvas.itemconfig("red_skull_image", state="normal")
+                                canvas.itemconfig("green_skull_image", state="hidden")
+                            else:
+                                canvas.itemconfig("red_skull_image", state="hidden")
+                                canvas.itemconfig("green_skull_image", state="normal")
+                        break
+            else:
+                for tag in [
+                    "red_skull_image",
+                    "green_skull_image",
+                    "health",
+                    "numberhealth",
+                    "health_bar_bg",
+                    "regen_meter",
+                    "numberregen",
+                    arcid
+                ]:
+                    canvas.itemconfig(tag, state="hidden")
+        except Exception as e:
+            print(f" Error capturing screen: {e} (Game is probably starting right now)", end="\r", flush=True)
     else:
         canvas.itemconfig("all", state="hidden") 
-    root.after(16, UpdateHUD)
+    root.after(16, UpdateHUD) #loop at 125 FPS
 
 UpdateHUD()
 keyboard.add_hotkey('f3', lambda: root.destroy()) #killswitch
 keyboard.add_hotkey("insert", lambda: webbrowser.open("http://localhost:3000"))
 root.mainloop()
-
-
