@@ -59,8 +59,8 @@ calibrated_ammo_colour  = (0, 0, 0)
 # constants for regen meter
 minregencolour          = [0, 88, 0]
 maxregencolour          = [76, 239, 186]
-minhpcolour             = [0, 55, 0]
-maxhpcolour             = [255, 239, 244]
+minammocolour           = [0, 178, 0]
+maxhpcolour             = [173, 255, 207]
 
 # Load configuration from config.json
 with open(config_path, "r") as f:
@@ -131,6 +131,7 @@ def save_config():
         "regensuffix": regensuffix,
         "calibrated_ammo_colour": calibrated_ammo_colour
     }
+
     with open(config_path, "w") as f:
         json.dump(config_data, f, indent=4)
 
@@ -161,7 +162,10 @@ if calibrated_ammo_colour == (0, 0, 0):
     root.update()
     hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
     screen_img = capture_client(hwnd)
-    while not screen_img.getpixel((1772, 980)) == screen_img.getpixel((1746, 980)) == screen_img.getpixel((1720, 980)) == screen_img.getpixel((1694, 980)) == screen_img.getpixel((1668, 980)) != (0, 0, 0):
+    pixel_colour = screen_img.getpixel((1772, 980))
+    while not screen_img.getpixel((1772, 980)) == screen_img.getpixel((1746, 980)) == screen_img.getpixel((1720, 980)) == screen_img.getpixel((1694, 980)) == screen_img.getpixel((1668, 980)) or pixel_colour[1] < 178:
+        pixel_colour = screen_img.getpixel((1772, 980))
+        print(pixel_colour)
         hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
         screen_img = capture_client(hwnd)
         time.sleep(0.1)
@@ -195,22 +199,21 @@ if overlaytoggle:
     print("Overlay initialized")
     canvas.create_image(screen_width//2, screen_height//2, image=overlay_photo, tags="overlay")
 
-# Create Regen Meter    
+# Create Regen Meter   
+canvas.create_oval(
+114, 954,
+168, 1007,
+fill=regenbgcolour, outline="", tags="regen_meter", state="hidden")
+arcid = canvas.create_arc(
+    141 - 26, 981 - 26, 141 + 26, 982 + 26,
+    start=88,
+    extent = 0,
+    style="pieslice",
+    outline="",
+    fill=overhealcolour,
+    state="hidden") 
 if regentoggle:
     print("Regen Meter initialized")
-    canvas.create_oval(
-    114, 954,
-    168, 1007,
-    fill=regenbgcolour, outline="", tags="regen_meter", state="hidden")
-    arcid = canvas.create_arc(
-        141 - 26, 981 - 26, 141 + 26, 982 + 26,
-        start=88,
-        extent = 0,
-        style="pieslice",
-        outline="",
-        fill=overhealcolour,
-        state="hidden"
-    )
     canvas.create_image(141, 982, image=regen_skull_photo, tags="regen_meter", state="hidden")
 
 # Create Crosshair
@@ -293,7 +296,7 @@ def UpdateHUD():
         control_colour = screen_img.getpixel((172, 976))
         bar_colour = screen_img.getpixel((172, 976))
         
-        if pixel_colour == screen_img.getpixel((141, 954)) == (0, 0, 0) != bar_colour and bar_colour[1] >= 55:
+        if pixel_colour == screen_img.getpixel((141, 954)) == (0, 0, 0) != bar_colour and bar_colour[1] >= 55:  
                        
             if numberhealthtoggle:
                 canvas.itemconfig("numberhealth", state="normal")
@@ -371,4 +374,3 @@ UpdateHUD()
 keyboard.add_hotkey('f3', lambda: root.destroy()) #killswitch
 keyboard.add_hotkey("insert", lambda: webbrowser.open("http://localhost:3000"))
 root.mainloop()
-
