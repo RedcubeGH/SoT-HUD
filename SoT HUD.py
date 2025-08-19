@@ -161,7 +161,7 @@ if calibrated_ammo_colour == (0, 0, 0):
     root.update()
     hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
     screen_img = capture_client(hwnd)
-    while not screen_img.getpixel((1772, 980)) == screen_img.getpixel((1746, 980)) == screen_img.getpixel((1720, 980)) == screen_img.getpixel((1694, 980)) == screen_img.getpixel((1668, 980)):
+    while not screen_img.getpixel((1772, 980)) == screen_img.getpixel((1746, 980)) == screen_img.getpixel((1720, 980)) == screen_img.getpixel((1694, 980)) == screen_img.getpixel((1668, 980)) != (0, 0, 0):
         hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
         screen_img = capture_client(hwnd)
         time.sleep(0.1)
@@ -371,3 +371,4 @@ UpdateHUD()
 keyboard.add_hotkey('f3', lambda: root.destroy()) #killswitch
 keyboard.add_hotkey("insert", lambda: webbrowser.open("http://localhost:3000"))
 root.mainloop()
+
