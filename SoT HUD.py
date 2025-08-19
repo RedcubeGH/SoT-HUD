@@ -131,7 +131,6 @@ def save_config():
         "regensuffix": regensuffix,
         "calibrated_ammo_colour": calibrated_ammo_colour
     }
-
     with open(config_path, "w") as f:
         json.dump(config_data, f, indent=4)
 
@@ -374,3 +373,4 @@ UpdateHUD()
 keyboard.add_hotkey('f3', lambda: root.destroy()) #killswitch
 keyboard.add_hotkey("insert", lambda: webbrowser.open("http://localhost:3000"))
 root.mainloop()
+
