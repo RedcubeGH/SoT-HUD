@@ -29,7 +29,7 @@
     "ammoanchor": "e",
     "xoffsetammo": 0,
     "yoffsetammo": 0,
-    "regenanchor": "center",
+    "regenanchor": "e",
     "xoffsetregen": 0,
     "yoffsetregen": 0,
     "healthprefix": "",
@@ -39,3 +39,4 @@
     "regenprefix": "",
     "regensuffix": ""
 }
+
