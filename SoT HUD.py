@@ -185,8 +185,8 @@ def load_image(filename, size=None, toggle=True):
         print(f"{filename} does not have required RGB channels! Skipping {filename}")
         return None, False
 
-green_skull_photo, skulltoggle              = load_image("Health_Bar_Skull_Green.png",      (38,41), skulltoggle)
-red_skull_photo, skulltoggle                = load_image("Health_Bar_Skull_Red.png",        (38,41), skulltoggle)
+green_skull_photo, skulltoggle              = load_image("Health_Bar_Skull_Green.png",      (53,57), skulltoggle)
+red_skull_photo, skulltoggle                = load_image("Health_Bar_Skull_Red.png",        (53,57), skulltoggle)
 ammophoto, ammotoggle                       = load_image("ammogauge-pistol-ammunition.png", (18,17), ammotoggle)
 healthbar_frame_photo, healthbardecotoggle  = load_image("Health_Bar_BG_Frame.png",         (315,100), healthbardecotoggle)
 regen_skull_photo, regentoggle              = load_image("Regen_Meter_Skull.png",           (60,60), regentoggle)
@@ -262,7 +262,7 @@ if numberregentoggle:
     print("Number Based Regen initialized")
     canvas.create_text(100 + xoffsetregen, 980 + yoffsetregen, fill=numberregencolour, text=f"{regenprefix}0{regensuffix}", font=(font, regensize), tags="numberregen", anchor="e", state="hidden")
 
-print(" Game not running", end="\r", flush=True)
+print(" Game not running or not in focus", end="\r", flush=True)
 
 def UpdateHUD():
     hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
@@ -298,8 +298,8 @@ def UpdateHUD():
             control_colour = screen_img.getpixel((172, 976))
             bar_colour = screen_img.getpixel((172, 976))
             
-            if pixel_colour == screen_img.getpixel((141, 954)) == (0, 0, 0) != bar_colour and bar_colour[1] >= 55:
-
+            if pixel_colour == screen_img.getpixel((141, 954)) == (0, 0, 0) != bar_colour and bar_colour[1] >= 55:     
+                        
                 if numberhealthtoggle:
                     canvas.itemconfig("numberhealth", state="normal")
                     
