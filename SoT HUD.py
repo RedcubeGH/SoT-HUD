@@ -374,6 +374,7 @@ def UpdateHUD():
                     arcid
                 ]:
                     canvas.itemconfig(tag, state="hidden")
+                canvas.itemconfig("numberregen", text=f"{regenprefix}0{regensuffix}")
         except Exception as e:
             print(f" Error capturing screen: {e} (Game is probably starting right now)", end="\r", flush=True)
     else:
@@ -384,3 +385,4 @@ UpdateHUD()
 keyboard.add_hotkey('f3', lambda: root.destroy()) #killswitch
 keyboard.add_hotkey("insert", lambda: webbrowser.open("http://localhost:3000"))
 root.mainloop()
+
