@@ -376,7 +376,7 @@ def UpdateHUD():
                     canvas.itemconfig(tag, state="hidden")
                 canvas.itemconfig("numberregen", text=f"{regenprefix}0{regensuffix}")
         except Exception as e:
-            print(f" Error capturing screen: {e} (Game is probably starting right now)", end="\r", flush=True)
+            print(f" Error capturing screen: {e} (Game is probably starting right now)                                                                   ", end="\r", flush=True)
     else:
         canvas.itemconfig("all", state="hidden") 
     root.after(16, UpdateHUD) #loop at 125 FPS
@@ -385,4 +385,5 @@ UpdateHUD()
 keyboard.add_hotkey('f3', lambda: root.destroy()) #killswitch
 keyboard.add_hotkey("insert", lambda: webbrowser.open("http://localhost:3000"))
 root.mainloop()
+
 
