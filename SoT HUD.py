@@ -268,13 +268,16 @@ if numberregentoggle:
     print("Number Based Regen initialized")
     canvas.create_text(100 + xoffsetregen, 980 + yoffsetregen, fill=numberregencolour, text=f"{regenprefix}0{regensuffix}", font=(font, regensize), tags="numberregen", anchor=regenanchor, state="hidden")
 
-print(" Game not running", end="\r", flush=True)
+print(" Game not running or not in focus", end="\r", flush=True)
 
 def UpdateHUD():
     hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
     if hwnd == win32gui.GetForegroundWindow():
         try:
-            screen_img = capture_client(hwnd)            
+            print(" Game found updating HUD" + ("    " * 20), end="\r", flush=True)
+            
+            screen_img = capture_client(hwnd)
+            
             if overlaytoggle:
                 canvas.itemconfig("overlay", state="normal")
             
@@ -295,9 +298,7 @@ def UpdateHUD():
                             canvas.itemconfig("numberammo", state="normal", text=f"{ammoprefix}{ammocount}{ammosuffix}")
                         if crosshairtoggle:
                             canvas.itemconfig("crosshair", state="normal")
-                        break            
-            
-            print(" Game found updating HUD" + ("    " * 20), end="\r", flush=True)
+                        break
             
             # Update Healthbar
             pixel_colour = screen_img.getpixel((169, 977))
@@ -385,6 +386,7 @@ UpdateHUD()
 keyboard.add_hotkey('f3', lambda: root.destroy()) #killswitch
 keyboard.add_hotkey("insert", lambda: webbrowser.open("http://localhost:3000"))
 root.mainloop()
+
 
 
 
