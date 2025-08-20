@@ -42,10 +42,13 @@ overlaytoggle           = False
 numberhealthtoggle      = False
 numberammotoggle        = False
 numberregentoggle       = False
+healthanchor            ="sw"
 xoffsethealth           = 0
 yoffsethealth           = 0
+ammoanchor              ="e"
 xoffsetammo             = 0
 yoffsetammo             = 0
+regenanchor             ="e"
 xoffsetregen            = 0
 yoffsetregen            = 0
 healthprefix            = ""
@@ -117,10 +120,13 @@ def save_config():
         "numberhealthtoggle": numberhealthtoggle,
         "numberammotoggle": numberammotoggle,
         "numberregentoggle": numberregentoggle,
+        "healthanchor": healthanchor,
         "xoffsethealth": xoffsethealth,
         "yoffsethealth": yoffsethealth,
+        "ammoanchor": ammoanchor,
         "xoffsetammo": xoffsetammo,
         "yoffsetammo": yoffsetammo,
+        "regenanchor": regenanchor,
         "xoffsetregen": xoffsetregen,
         "yoffsetregen": yoffsetregen,
         "healthprefix": healthprefix,
@@ -250,19 +256,19 @@ if healthbardecotoggle:
 # Number Based Health
 if numberhealthtoggle:
     print("Number Based Health initialized")
-    canvas.create_text(170 + xoffsethealth, 973 + yoffsethealth, fill=numberhealthcolour, font=(font, hpsize), anchor="sw", tags="numberhealth")
+    canvas.create_text(170 + xoffsethealth, 973 + yoffsethealth, fill=numberhealthcolour, font=(font, hpsize), anchor=healthanchor, tags="numberhealth")
 
 # Number Based Ammo
 if numberammotoggle:
     print("Number Based Ammo initialized")
-    canvas.create_text(1620 + xoffsetammo, 980 + yoffsetammo, fill=numberammocolour, font=(font, ammosize), anchor="e", tags="numberammo")
+    canvas.create_text(1620 + xoffsetammo, 980 + yoffsetammo, fill=numberammocolour, font=(font, ammosize), anchor=ammoanchor, tags="numberammo")
 
 # Number Based Regen
 if numberregentoggle:
     print("Number Based Regen initialized")
-    canvas.create_text(100 + xoffsetregen, 980 + yoffsetregen, fill=numberregencolour, text=f"{regenprefix}0{regensuffix}", font=(font, regensize), tags="numberregen", anchor="e", state="hidden")
+    canvas.create_text(100 + xoffsetregen, 980 + yoffsetregen, fill=numberregencolour, text=f"{regenprefix}0{regensuffix}", font=(font, regensize), tags="numberregen", anchor=regenanchor, state="hidden")
 
-print(" Game not running or not in focus", end="\r", flush=True)
+print(" Game not running", end="\r", flush=True)
 
 def UpdateHUD():
     hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
@@ -298,7 +304,7 @@ def UpdateHUD():
             control_colour = screen_img.getpixel((172, 976))
             bar_colour = screen_img.getpixel((172, 976))
             
-            if pixel_colour == screen_img.getpixel((141, 954)) == (0, 0, 0) != bar_colour and bar_colour[1] >= 55:     
+            if pixel_colour == screen_img.getpixel((141, 954)) == (0, 0, 0) != bar_colour and bar_colour[1] >= 55:
                         
                 if numberhealthtoggle:
                     canvas.itemconfig("numberhealth", state="normal")
