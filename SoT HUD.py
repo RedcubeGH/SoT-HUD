@@ -159,23 +159,29 @@ def capture_client(hwnd):
     
 # check if ammo colour is calibrated
 if calibrated_ammo_colour == (0, 0, 0):
-    canvas.create_text(
-        screen_width//2, screen_height//2,
-        text="Pull out a gun with full ammo to calibrate ammo colour",
-        fill="white", font=("Arial", 30), tags="calibration_text")
-    root.update_idletasks()
-    root.update()
-    hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
-    screen_img = capture_client(hwnd)
-    pixel_colour = screen_img.getpixel((1772, 980))
-    while not screen_img.getpixel((1772, 980)) == screen_img.getpixel((1746, 980)) == screen_img.getpixel((1720, 980)) == screen_img.getpixel((1694, 980)) == screen_img.getpixel((1668, 980)) or pixel_colour[1] < 178:
-        pixel_colour = screen_img.getpixel((1772, 980))
-        hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
-        screen_img = capture_client(hwnd)
-        time.sleep(0.1)
-    calibrated_ammo_colour = screen_img.getpixel((1772, 980))
-    canvas.delete("calibration_text")
-    save_config()
+    while True:
+        try:
+            hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
+            screen_img = capture_client(hwnd)
+            pixel_colour = screen_img.getpixel((1772, 980))
+            canvas.create_text(
+                screen_width//2, screen_height-100,
+                text="Pull out a gun with full ammo to calibrate ammo colour",
+                fill="white", font=("Arial", 30), tags="calibration_text")
+            root.update_idletasks()
+            root.update()
+            while not screen_img.getpixel((1772, 980)) == screen_img.getpixel((1746, 980)) == screen_img.getpixel((1720, 980)) == screen_img.getpixel((1694, 980)) == screen_img.getpixel((1668, 980)) or pixel_colour[1] < 178:
+                pixel_colour = screen_img.getpixel((1772, 980))
+                hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
+                screen_img = capture_client(hwnd)
+                time.sleep(0.1)
+            calibrated_ammo_colour = screen_img.getpixel((1772, 980))
+            canvas.delete("calibration_text")
+            save_config()
+            break
+        except Exception as e:
+            print(f" Game not found. Couldn't calibrate ammo colour: {e}" + ("    " * 10), end="\r", flush=True)
+            time.sleep(0.5)
 
 # load shit
 def load_image(filename, size=None, toggle=True):
@@ -268,7 +274,7 @@ if numberregentoggle:
     print("Number Based Regen initialized")
     canvas.create_text(100 + xoffsetregen, 980 + yoffsetregen, fill=numberregencolour, text=f"{regenprefix}0{regensuffix}", font=(font, regensize), tags="numberregen", anchor=regenanchor, state="hidden")
 
-print(" Game not running or not in focus", end="\r", flush=True)
+print(" Game not running or not in focus" + ("    " * 20), end="\r", flush=True)
 
 def UpdateHUD():
     hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
@@ -386,6 +392,7 @@ UpdateHUD()
 keyboard.add_hotkey('f3', lambda: root.destroy()) #killswitch
 keyboard.add_hotkey("insert", lambda: webbrowser.open("http://localhost:3000"))
 root.mainloop()
+
 
 
 
