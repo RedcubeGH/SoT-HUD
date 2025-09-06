@@ -303,7 +303,7 @@ class Overlay(QtWidgets.QWidget):
             foreground = win32gui.GetForegroundWindow()
             if hwnd and hwnd == foreground:
                 self.screen_img = capture_client(hwnd)
-                self.show_overlay = "true"
+                self.show_overlay = True
 
                 # Ammo detection
                 if ammotoggle or crosshairtoggle or numberammotoggle:
@@ -517,3 +517,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
