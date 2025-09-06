@@ -13,12 +13,12 @@
     "ammosize": 25,
     "hpsize": 25,
     "regensize": 25,
-    "ammotoggle": false,
+    "ammotoggle": true,
     "crosshairtoggle": false,
-    "healthbartoggle": false,
-    "healthbardecotoggle": false,
-    "skulltoggle": false,
-    "regentoggle": false,
+    "healthbartoggle": true,
+    "healthbardecotoggle": true,
+    "skulltoggle": true,
+    "regentoggle": true,
     "overlaytoggle": false,
     "numberhealthtoggle": false,
     "numberammotoggle": false,
@@ -39,4 +39,3 @@
     "regenprefix": "",
     "regensuffix": ""
 }
-
