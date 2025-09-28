@@ -14,6 +14,14 @@ import win32ui
 from ctypes import windll
 import keyboard
 from PyQt5 import QtCore, QtGui, QtWidgets, QtCore
+import glfw
+import OpenGL.GL as gl
+import imgui
+from imgui.integrations.glfw import GlfwRenderer
+import threading
+import time
+from OpenGL.GL import *
+from fontTools.ttLib import TTFont
 
 # Paths
 script_dir  = os.path.dirname(os.path.abspath(__file__))
@@ -35,6 +43,7 @@ ammosize                = 25
 hpsize                  = 25
 regensize               = 25
 ammotoggle              = True
+ammodecotoggle          = True
 crosshairtoggle         = False
 healthbartoggle         = True
 healthbardecotoggle     = True
@@ -60,12 +69,37 @@ ammosuffix              = "/5"
 regenprefix             = ""
 regensuffix             = ""
 
-# constants for regen meter and ammo calibration
+# constants
 minregencolour          = [0, 88, 0]
 maxregencolour          = [76, 239, 186]
 minammocolour           = [0, 178, 0]
 maxhpcolour             = [173, 255, 207]
 calibrated_ammo_colour  = (0, 0, 0)
+show_UI                 = False
+hp_slider               = 75.0
+regen_slider            = 50.0
+ammo_slider             = 5
+low_hp_slider           = lowhealthvar
+lowhealthvarchanged     = False
+current_font            = 0
+font_dir                = "C:\Windows\Fonts"
+font_files              = [os.path.join(font_dir, f) for f in os.listdir(font_dir) if f.lower().endswith((".ttf", ".otf"))]
+healthoffset            = xoffsethealth, yoffsethealth
+ammooffset              = xoffsetammo, yoffsetammo
+regenoffset             = xoffsetregen, yoffsetregen
+
+def get_font_title(font_path: str) -> str:
+    font = TTFont(font_path, fontNumber=0)
+    name = font['name']
+    # NameID 4 = Full Font Name
+    for record in name.names:
+        if record.nameID == 4:
+            return str(record.string, record.getEncoding()).strip()
+
+
+fonts = [get_font_title(f) for f in font_files]
+if not fonts:
+    fonts = ["No fonts found"]
 
 # load config.json
 try:
@@ -100,6 +134,7 @@ def save_config():
         "hpsize": hpsize,
         "regensize": regensize,
         "ammotoggle": ammotoggle,
+        "ammodecotoggle": ammodecotoggle,
         "crosshairtoggle": crosshairtoggle,
         "healthbartoggle": healthbartoggle,
         "healthbardecotoggle": healthbardecotoggle,
@@ -142,14 +177,14 @@ ALIGN_MAP = {
     "sw":       QtCore.Qt.AlignBottom | QtCore.Qt.AlignLeft,
     "w":        QtCore.Qt.AlignLeft   | QtCore.Qt.AlignVCenter,
     "nw":       QtCore.Qt.AlignTop    | QtCore.Qt.AlignLeft,
-    "center":   QtCore.Qt.AlignCenter,                       
+    "x":   QtCore.Qt.AlignCenter,                       
 }
 
-def make_rect(x, y, xoffset, yoffset, anchor="center"):
+def make_rect(x, y, xoffset, yoffset, anchor="x"):
     w = h = 500
     half_w, half_h = w // 2, h // 2
 
-    if anchor == "center":
+    if anchor == "x":
         return QtCore.QRect((x + int(xoffset)) - half_w, (y + int(yoffset)) - half_h, w, h)
 
     elif anchor == "n":
@@ -176,19 +211,58 @@ def make_rect(x, y, xoffset, yoffset, anchor="center"):
     elif anchor == "nw":
         return QtCore.QRect((x + int(xoffset)), (y + int(yoffset)), w, h)
 
+def hex_to_rgb_f(hex_color):
+    hex_color = hex_color.lstrip("#")
+    r = int(hex_color[0:2], 16) / 255.0
+    g = int(hex_color[2:4], 16) / 255.0
+    b = int(hex_color[4:6], 16) / 255.0
+    return [r, g, b]
+
+def rgb_f_to_hex(rgb):
+    r, g, b = rgb
+    return "#{:02X}{:02X}{:02X}".format(int(r*255), int(g*255), int(b*255))
+
+def get_dyn_pos_right(pos):
+    try:
+        hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
+        return round(win32gui.GetClientRect(hwnd)[2]+get_dyn_x(pos-1920))
+    except Exception:
+        user32 = ctypes.windll.user32
+        sot_width = user32.GetSystemMetrics(0)
+        return round(sot_width+get_dyn_x(pos-1920))
+
+def get_dyn_x(pos):
+    try:
+        hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
+        _, top, _, bot = win32gui.GetClientRect(hwnd)
+        sot_height = bot - top
+    except Exception:
+        user32 = ctypes.windll.user32
+        sot_height = user32.GetSystemMetrics(1)
+    normal_sot_width = (sot_height / 9)*16
+    return round((pos / 1920) * normal_sot_width)
+
+def get_dyn_y(pos):
+    try:
+        hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
+        _, top, _, bot = win32gui.GetClientRect(hwnd)
+        sot_height = bot - top
+    except Exception:
+        user32 = ctypes.windll.user32
+        sot_height = user32.GetSystemMetrics(1)
+    return round((pos / 1080) * sot_height)
+
 # SoT capture
 def capture_client(hwnd):
     left, top, right, bot = win32gui.GetClientRect(hwnd)
     w, h = right - left, bot - top
-    if w <= 0 or h <= 0:
-        raise RuntimeError("Invalid client area")
     hwndDC = win32gui.GetWindowDC(hwnd)
     mfcDC  = win32ui.CreateDCFromHandle(hwndDC)
     saveDC = mfcDC.CreateCompatibleDC()
     saveBitMap = win32ui.CreateBitmap()
     saveBitMap.CreateCompatibleBitmap(mfcDC, w, h)
     saveDC.SelectObject(saveBitMap)
-    windll.user32.PrintWindow(hwnd, saveDC.GetSafeHdc(), 2)
+    windll.user32.PrintWindow(hwnd, saveDC.GetSafeHdc(), 3)
     bmpinfo = saveBitMap.GetInfo()
     bmpstr = saveBitMap.GetBitmapBits(True)
     img = Image.frombuffer('RGB', (bmpinfo['bmWidth'], bmpinfo['bmHeight']), bmpstr, 'raw', 'BGRX', 0, 1)
@@ -227,6 +301,7 @@ class Overlay(QtWidgets.QWidget):
         # pixmaps passed from main
         (self.green_skull_pix,
          self.red_skull_pix,
+         self.ammo_bg_pix,
          self.ammo_pix,
          self.healthbar_bg_pix,
          self.regen_skull_pix,
@@ -245,7 +320,8 @@ class Overlay(QtWidgets.QWidget):
         self.show_regen = False
         self.show_skull_red = False
         self.show_skull_green = False
-        self.current_hp = None
+        self.current_hp = 0
+        self.regen_extent = 0
 
         # calibration label
         self.calibration_label = QtWidgets.QLabel(self)
@@ -282,8 +358,8 @@ class Overlay(QtWidgets.QWidget):
                 if hwnd == 0:
                     raise RuntimeError("Game not found")
                 screen_img = capture_client(hwnd)
-                px = screen_img.getpixel((1772, 980))
-                cond = (screen_img.getpixel((1772, 980)) == screen_img.getpixel((1746, 980)) == screen_img.getpixel((1720, 980)) == screen_img.getpixel((1694, 980)) == screen_img.getpixel((1668, 980))) and (px[1] >= 178)
+                px = screen_img.getpixel((get_dyn_pos_right(1772), get_dyn_y(980)))
+                cond = (px == screen_img.getpixel((get_dyn_pos_right(1746), get_dyn_y(980))) == screen_img.getpixel((get_dyn_pos_right(1720), get_dyn_y(980))) == screen_img.getpixel((get_dyn_pos_right(1694), get_dyn_y(980))) == screen_img.getpixel((get_dyn_pos_right(1668), get_dyn_y(980)))) and (px[1] >= 178)
                 if cond:
                     self.calibrated_ammo_colour = px
                     global calibrated_ammo_colour
@@ -299,16 +375,18 @@ class Overlay(QtWidgets.QWidget):
 
         try:
             # only do shit when game running and focused
-            hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
             foreground = win32gui.GetForegroundWindow()
-            if hwnd and hwnd == foreground:
+            hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
+            if hwnd and hwnd == foreground and not show_UI:
                 self.screen_img = capture_client(hwnd)
                 self.show_overlay = True
 
                 # Ammo detection
                 if ammotoggle or crosshairtoggle or numberammotoggle:
                     for i in range(6):
-                        px = self.screen_img.getpixel((1642 + (26*i), 980))
+                        px = self.screen_img.getpixel((get_dyn_pos_right(1642) + get_dyn_x(26*i), get_dyn_y(980)))
+                        if self.screen_height == 1440:
+                            px = self.screen_img.getpixel((get_dyn_pos_right(1642) + 33*i, get_dyn_y(980)))
                         if px == tuple(self.calibrated_ammo_colour):
                             self.ammo_states[i] = True
                         else:
@@ -321,22 +399,20 @@ class Overlay(QtWidgets.QWidget):
                                 break
 
                 # Health/regen detection
-                pixel_colour = self.screen_img.getpixel((169, 977))
-                control_colour = self.screen_img.getpixel((172, 976))
-                bar_colour = self.screen_img.getpixel((172, 976))
-
-                if pixel_colour == self.screen_img.getpixel((141, 954)) == (0,0,0) != bar_colour and bar_colour[1] >= 55:
+                pixel_colour = self.screen_img.getpixel((get_dyn_x(169), get_dyn_y(977))) #supposed to be #000000
+                control_colour = self.screen_img.getpixel((get_dyn_x(176), get_dyn_y(977))) #supposed to be colour of healthbar
+                if max(pixel_colour[:3]) <= 3 >= max(self.screen_img.getpixel((get_dyn_x(141), get_dyn_y(955)))[:3]) != control_colour and control_colour[1] >= 55 and not show_UI:
                     # show hud pieces when healthbar is there
                     self.show_health = True
                     self.show_regen = True
-                    regen_control_colour = self.screen_img.getpixel((141, 958))
+                    regen_control_colour = self.screen_img.getpixel((get_dyn_x(141), get_dyn_y(958)))
                     if (regen_control_colour[0] <= maxregencolour[0] and
                         minregencolour[1] <= regen_control_colour[1] <= maxregencolour[1] and
                         regen_control_colour[2] <= maxregencolour[2]):
                         for i in range(200):
                             theta = (2 * math.pi / 200) * -(i+50)
-                            x = int(140 + 23 * math.cos(theta))
-                            y = int(982 + 23 * math.sin(theta))
+                            x = get_dyn_x(140 + 23 * math.cos(theta))
+                            y = get_dyn_y(982 + 23 * math.sin(theta))
                             px = self.screen_img.getpixel((x, y))
                             if (px[0] <= maxregencolour[0] and
                                 minregencolour[1] <= px[1] <= maxregencolour[1] and
@@ -351,7 +427,7 @@ class Overlay(QtWidgets.QWidget):
                                 break
 
                     for hp in range(100):
-                        px = self.screen_img.getpixel((385 - (2*hp), 984))
+                        px = self.screen_img.getpixel((get_dyn_x(384 - (2*hp)), get_dyn_y(984)))
                         if px == control_colour and px[1] >= 55:
                             self.current_hp = 100-hp
                             break
@@ -371,10 +447,11 @@ class Overlay(QtWidgets.QWidget):
                     self.regen_text = f"{regenprefix}0{regensuffix}"
                     self.show_skull_red = False
                     self.show_skull_green = False
-                    self.current_hp = None
+                    self.current_hp = 0
+                    self.regen_extent = 0
 
                 self.update()
-            else:
+            elif not show_UI:
                 # hide hud when game not focused or not running
                 self.screen_img = None
                 self.ammo_states = [False]*6
@@ -386,121 +463,442 @@ class Overlay(QtWidgets.QWidget):
                 self.regen_text = f"{regenprefix}0{regensuffix}"
                 self.show_skull_red = False
                 self.show_skull_green = False
-                self.current_hp = None
+                self.current_hp = 0
+                self.regen_extent = 0
+                self.update()
+            else:
                 self.update()
         except Exception as e:
-            print(f" Error capturing screen: {e} (Game is probably starting right now)"+(" "*20), end="\r", flush=True)
+            print(f"{e} (Game is probably starting right now)"+("  "*20), end="\r", flush=True)
 
     # this is the shit that actually draws all of the HUD parts
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
+        # print(f"{get_dyn_x(140)}x, {get_dyn_y(981)}y")
+        
         # overlay image
-        if self.show_overlay and self.overlay_pix:
+        if self.show_overlay and overlaytoggle or show_UI and overlaytoggle:
             painter.drawPixmap((self.screen_width - self.overlay_pix.width()) // 2,
                                (self.screen_height - self.overlay_pix.height()) // 2,
                                self.overlay_pix)
-
+        
+        #ammo decoration
+        if ammodecotoggle and any(self.ammo_states) or show_UI and ammodecotoggle:
+            painter.drawPixmap(get_dyn_pos_right(1546), get_dyn_y(919), self.ammo_bg_pix)
+        
         # ammo image
-        if ammotoggle and any(self.ammo_states):
+        if ammotoggle and any(self.ammo_states) or show_UI and ammotoggle:
             for i in range(6):
-                x = 1642 + (26*i)
-                y = 980
+                x = get_dyn_pos_right(1642) + get_dyn_x(26*i)
+                y = get_dyn_y(980)
+                if self.screen_height == 1440:                      # insanely shitty temporary fix for the ammo being off on higher res (love sot jank)
+                    x = get_dyn_pos_right(1648) + 33*i              # ammo spacing inconsistent and offset to the right by 6px for some reason
+                    y = get_dyn_y(981)                              # offset down by 1px
+                if self.screen_height == 2160:                      # 
+                    x = get_dyn_pos_right(1641) + get_dyn_x(26*i)   # offset to the left by 1px
+                    y = get_dyn_y(981)                              # offset down by 1px
                 if self.ammo_states[i] and self.ammo_pix:
                     painter.drawPixmap(x - self.ammo_pix.width()//2, y - self.ammo_pix.height()//2, self.ammo_pix)
-
+        
         # crosshair
-        if crosshairtoggle and any(self.ammo_states):
+        if crosshairtoggle and any(self.ammo_states) or show_UI and crosshairtoggle:
             painter.setBrush(QtGui.QColor(crosshaircolour))
             painter.setPen(QtGui.QColor(crosshairoutlinecolour))
-            cx = self.screen_width // 2
-            cy = self.screen_height // 2
-            painter.drawEllipse(QtCore.QRectF(cx - 2.5, cy - 2.5, 5, 5))
-
+            diameter = 4
+            painter.drawEllipse(QtCore.QRectF(self.screen_width/2 - diameter/2, self.screen_height/2 - diameter/2, diameter, diameter))
+            
         # healthbar polygon
-        if healthbartoggle and getattr(self, "current_hp", None) is not None and self.show_health:
+        if healthbartoggle and getattr(self, "current_hp", None) is not None and self.show_health or show_UI and healthbartoggle:
             hp = self.current_hp
-            br_x = 395 - (((395-193)/100)*(100-hp))
-            tr_x = 380 - (((380-176)/100)*(100-hp))
-            pts = [QtCore.QPointF(167,974), QtCore.QPointF(182,989), QtCore.QPointF(br_x, 990), QtCore.QPointF(tr_x, 974)]
+            br_x = get_dyn_x(396 - (((396-192)/100)*(100-hp)))
+            tr_x = get_dyn_x(380 - (((380-176)/100)*(100-hp)))
+            pts = [QtCore.QPointF(get_dyn_x(165),get_dyn_y(973)), QtCore.QPointF(get_dyn_x(181),get_dyn_y(990)), QtCore.QPointF(br_x, get_dyn_y(990)), QtCore.QPointF(tr_x, get_dyn_y(973))]
             poly = QtGui.QPolygonF(pts)
             color = lowhealthcolour if self.current_hp <= lowhealthvar else healthcolour
             painter.setBrush(QtGui.QColor(color))
             painter.setPen(QtCore.Qt.NoPen)
             painter.drawPolygon(poly)
+        
+        # low health line
+        if healthbartoggle and lowhealthvarchanged and show_UI:
+            br_x = get_dyn_x(396 - (((396-192)/100)*(100-lowhealthvar)))
+            tr_x = get_dyn_x(380 - (((380-176)/100)*(100-lowhealthvar)))
+            pen = QtGui.QPen(QtCore.Qt.black, 4)
+            painter.setPen(pen)
+            painter.drawLine(br_x, get_dyn_y(990), tr_x, get_dyn_y(973))
+            pen = QtGui.QPen(QtCore.Qt.red, 2)
+            painter.setPen(pen)
+            painter.drawLine(br_x, get_dyn_y(990), tr_x, get_dyn_y(973))
 
         # healthbar decoration
-        if healthbardecotoggle and self.healthbar_bg_pix and self.show_health:
-            painter.drawPixmap(256 - self.healthbar_bg_pix.width()//2, 982 - self.healthbar_bg_pix.height()//2, self.healthbar_bg_pix)
+        if healthbardecotoggle and self.healthbar_bg_pix and self.show_health or show_UI and healthbardecotoggle:
+            painter.drawPixmap(get_dyn_x(256) - self.healthbar_bg_pix.width()//2, get_dyn_y(982) - self.healthbar_bg_pix.height()//2, self.healthbar_bg_pix)
 
         # regen meter background + arc + skull
-        if regentoggle and self.show_regen:
+        if regentoggle and self.show_regen or show_UI and regentoggle:
             painter.setBrush(QtGui.QColor(regenbgcolour))
             painter.setPen(QtCore.Qt.NoPen)
-            painter.drawEllipse(QtCore.QRectF(114, 954, 54, 54))
-            if self.regen_extent and self.regen_extent != 0:
-                rect = QtCore.QRectF(141-26, 981-26, 52, 52)
-                start_deg = 90
-                span_deg = -self.regen_extent
-                start16 = int(start_deg * 16)
-                span16 = int(span_deg * 16)
-                painter.setBrush(QtGui.QColor(overhealcolour))
-                painter.drawPie(rect, start16, span16)
+            painter.drawEllipse(QtCore.QRectF(get_dyn_x(114), get_dyn_y(954), get_dyn_x(54), get_dyn_y(54)))
+            rect = QtCore.QRectF(get_dyn_x(141-27), get_dyn_y(981-27), get_dyn_x(55), get_dyn_y(55))
+            start_deg = 90
+            span_deg = -self.regen_extent
+            start16 = int(start_deg * 16)
+            span16 = int(span_deg * 16)
+            painter.setBrush(QtGui.QColor(overhealcolour))
+            painter.drawPie(rect, start16, span16)
             if self.regen_skull_pix:
-                painter.drawPixmap(141 - self.regen_skull_pix.width()//2, 982 - self.regen_skull_pix.height()//2, self.regen_skull_pix)
+                painter.drawPixmap(get_dyn_x(141) - self.regen_skull_pix.width()//2, get_dyn_y(982) - self.regen_skull_pix.height()//2, self.regen_skull_pix)
 
         # skulls
-        if skulltoggle and self.show_health:
+        if skulltoggle and self.show_health or show_UI and skulltoggle:
             if self.show_skull_green and self.green_skull_pix:
-                painter.drawPixmap(140 - self.green_skull_pix.width()//2, 981 - self.green_skull_pix.height()//2, self.green_skull_pix)
+                painter.drawPixmap(get_dyn_x(140) - self.green_skull_pix.width()//2, get_dyn_y(981) - self.green_skull_pix.height()//2, self.green_skull_pix)
             if self.show_skull_red and self.red_skull_pix:
-                painter.drawPixmap(140 - self.red_skull_pix.width()//2, 981 - self.red_skull_pix.height()//2, self.red_skull_pix)
-
+                painter.drawPixmap(get_dyn_x(140) - self.red_skull_pix.width()//2, get_dyn_y(981) - self.red_skull_pix.height()//2, self.red_skull_pix)
+        
         # number health
-        if numberhealthtoggle and self.health_num_text and self.show_health:
+        if numberhealthtoggle and self.health_num_text and self.show_health or show_UI and numberhealthtoggle:
             painter.setPen(QtGui.QColor(numberhealthcolour))
             font_q = QtGui.QFont(font, hpsize)
             painter.setFont(font_q)
-            healthrect = make_rect(170, 973, xoffsethealth, yoffsethealth, healthanchor)
+            healthrect = make_rect(get_dyn_x(170), get_dyn_y(973), xoffsethealth, yoffsethealth, healthanchor)
             painter.drawText(healthrect, ALIGN_MAP[healthanchor], self.health_num_text)
 
         # number regen
-        if numberregentoggle and self.show_regen:
+        if numberregentoggle and self.show_regen or show_UI and numberregentoggle:
             painter.setPen(QtGui.QColor(numberregencolour))
             font_q = QtGui.QFont(font, regensize)
             painter.setFont(font_q)
-            regenrect = make_rect(100, 980, xoffsetregen, yoffsetregen, regenanchor)
+            regenrect = make_rect(get_dyn_x(100), get_dyn_y(980), xoffsetregen, yoffsetregen, regenanchor)
             painter.drawText(regenrect, ALIGN_MAP[regenanchor], self.regen_text)
             
         # number ammo
-        if numberammotoggle and any(self.ammo_states):
+        if numberammotoggle and any(self.ammo_states) or show_UI and numberammotoggle:
             painter.setPen(QtGui.QColor(numberammocolour))
             font_q = QtGui.QFont(font, ammosize)
             painter.setFont(font_q)
-            ammorect = make_rect(1620, 980, xoffsetammo, yoffsetammo, ammoanchor)
+            ammorect = make_rect(get_dyn_pos_right(1620), get_dyn_y(980), xoffsetammo, yoffsetammo, ammoanchor)
             painter.drawText(ammorect, ALIGN_MAP[ammoanchor], self.numberammo_text)
-
         painter.end()
+
+def imgui_thread(overlay):
+    global lowhealthvar
+    global lowhealthcolour
+    global healthcolour
+    global overhealcolour
+    global regenbgcolour
+    global numberhealthcolour
+    global numberammocolour
+    global numberregencolour
+    global crosshaircolour
+    global crosshairoutlinecolour
+    global font
+    global ammosize
+    global hpsize
+    global regensize
+    global ammotoggle
+    global ammodecotoggle
+    global crosshairtoggle
+    global healthbartoggle
+    global healthbardecotoggle
+    global skulltoggle
+    global regentoggle
+    global overlaytoggle
+    global numberhealthtoggle
+    global numberammotoggle
+    global numberregentoggle
+    global healthanchor
+    global xoffsethealth
+    global yoffsethealth
+    global healthoffset
+    global ammoanchor
+    global xoffsetammo
+    global yoffsetammo
+    global ammooffset
+    global regenanchor
+    global xoffsetregen
+    global yoffsetregen
+    global regenoffset
+    #
+    global healthprefix
+    global healthsuffix
+    global ammoprefix
+    global ammosuffix
+    global regenprefix
+    global regensuffix
+    global hp_slider
+    global regen_slider
+    global ammo_slider
+    global low_hp_slider
+    global lowhealthvarchanged
+    global current_font
+    
+    anchor_grid = [
+        ["nw", "n", "ne"],
+        ["w", "x", "e"],
+        ["sw", "s", "se"]
+    ]
+    
+    if not glfw.init():
+        print("Could not initialize GLFW")
+        return
+
+    # Create transparent window
+    glfw.window_hint(glfw.TRANSPARENT_FRAMEBUFFER, glfw.TRUE)
+    glfw.window_hint(glfw.RESIZABLE, glfw.FALSE)
+    
+    screen_width, screen_height = get_dyn_x(1904), get_dyn_y(1040)
+    window = glfw.create_window(screen_width, screen_height, "SoT HUD UI", None, None)
+
+    glfw.make_context_current(window)
+    # Get current window style
+    hwnd = glfw.get_win32_window(window)
+    style = win32gui.GetWindowLong(hwnd, win32con.GWL_STYLE)
+    
+    # Remove border styles but keep caption (toolbar)
+    style &= ~win32con.WS_BORDER
+    style &= ~win32con.WS_THICKFRAME
+    style &= ~win32con.WS_DLGFRAME
+    style &= ~win32con.WS_CAPTION
+
+    # Apply new style
+    win32gui.SetWindowLong(hwnd, win32con.GWL_STYLE, style)
+    glfw.swap_interval(1)
+    
+    exStyle = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
+
+    # remove taskbar icon (WS_EX_APPWINDOW) and add toolwindow flag (WS_EX_TOOLWINDOW)
+    exStyle &= ~win32con.WS_EX_APPWINDOW
+    exStyle |= win32con.WS_EX_TOOLWINDOW
+
+    win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, exStyle)
+
+    win32gui.SetWindowPos(
+        hwnd,
+        win32con.HWND_TOPMOST,
+        0, 0, 0, 0,
+        win32con.SWP_NOMOVE | win32con.SWP_NOSIZE
+    )
+    def set_clickthrough(hwnd, enabled: bool):
+        if enabled:
+            exStyle = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
+            exStyle |= win32con.WS_EX_LAYERED | win32con.WS_EX_TRANSPARENT
+            win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, exStyle)
+        else:
+            exStyle = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
+            exStyle &= ~win32con.WS_EX_TRANSPARENT
+            win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, exStyle)
+    
+    # Create ImGui context and renderer
+    imgui.create_context()
+    impl = GlfwRenderer(window, attach_callbacks=True)
+    
+    while not glfw.window_should_close(window):
+        glfw.poll_events()
+        impl.process_inputs()
+        
+        # frame clear shit
+        glClearColor(0.0, 0.0, 0.0, 0.0)
+        glClear(GL_COLOR_BUFFER_BIT)
+        impl.process_inputs()
+        imgui.new_frame()
+        if show_UI:
+            # All the healthbar customization options
+            imgui.begin("SoT HUD config", flags=imgui.WINDOW_ALWAYS_AUTO_RESIZE |
+                                            imgui.WINDOW_NO_SCROLLBAR)
+            imgui.begin_tab_bar("MainTabBar")
+            if imgui.begin_tab_item("Healthbar")[0]:
+                changed, healthbartoggle = imgui.checkbox("Healthbar", healthbartoggle)
+                if healthbartoggle:
+                    health_rgb = hex_to_rgb_f(healthcolour)
+                    changed, health_rgb = imgui.color_edit3("Health colour", *health_rgb)
+                    if changed:
+                        healthcolour = rgb_f_to_hex(health_rgb)
+                    changed, low_hp_slider = imgui.slider_float("Critical health point", low_hp_slider, 0, 100, "%.0f")
+                    lowhealthvar = int(low_hp_slider)
+                    if imgui.is_item_hovered() or imgui.is_item_active():
+                        lowhealthvarchanged = True
+                    else:
+                        lowhealthvarchanged = False
+                    lowhealth_rgb = hex_to_rgb_f(lowhealthcolour)
+                    changed, lowhealth_rgb = imgui.color_edit3("Low health colour", *lowhealth_rgb)
+                    if changed:
+                        lowhealthcolour = rgb_f_to_hex(lowhealth_rgb)
+                changed, healthbardecotoggle = imgui.checkbox("Healthbar decorations", healthbardecotoggle)
+                changed, numberhealthtoggle = imgui.checkbox("Health number", numberhealthtoggle)
+                if numberhealthtoggle:
+                    changed, hpsize = imgui.drag_int("Font Size", hpsize, 0.5, 1, 128)
+                    changed, healthoffset = imgui.drag_int2("Position", xoffsethealth, yoffsethealth, 1, -screen_width, screen_width)
+                    xoffsethealth, yoffsethealth = healthoffset
+                    numberhealth_rgb = hex_to_rgb_f(numberhealthcolour)
+                    changed, numberhealth_rgb = imgui.color_edit3("", *numberhealth_rgb)
+                    if changed:
+                        numberhealthcolour = rgb_f_to_hex(numberhealth_rgb)
+                    for row_idx, row in enumerate(anchor_grid):
+                        for col_idx, anchor in enumerate(row):
+                            # Highlight the currently selected anchor
+                            if anchor == healthanchor:
+                                imgui.push_style_color(imgui.COLOR_BUTTON, 0.3, 0.6, 0.9, 1.0)
+                            else:
+                                imgui.push_style_color(imgui.COLOR_BUTTON, 0.4, 0.4, 0.4, 1.0)
+                            
+                            # Draw the button
+                            if imgui.button(anchor, width=25, height=25):
+                                healthanchor = anchor  # update selected anchor
+
+                            imgui.pop_style_color()
+                            if col_idx < len(row) - 1:
+                                imgui.same_line()
+                    imgui.columns(3, "health_columns", False)  # False disables borders
+                    imgui.set_column_width(0, 90)
+                    imgui.push_item_width(80)
+                    changed, healthprefix = imgui.input_text(" ", healthprefix, 10)
+                    imgui.next_column()
+                    imgui.set_column_width(1, 30)
+                    imgui.text(f"{int(hp_slider)}")
+                    imgui.next_column()
+                    imgui.set_column_width(2, 136)
+                    changed, healthsuffix = imgui.input_text("  ", healthsuffix, 11)
+                    imgui.pop_item_width()
+                    imgui.next_column()
+                    imgui.columns(1)
+                changed, hp_slider = imgui.slider_float("Health testing slider", hp_slider, 0, 100, "%.0f")
+                imgui.end_tab_item()
+                
+            if imgui.begin_tab_item("Overheal")[0]:
+                changed, regentoggle = imgui.checkbox("Regen meter", regentoggle)
+                if regentoggle:
+                    overheal_rgb = hex_to_rgb_f(overhealcolour)
+                    changed, overheal_rgb = imgui.color_edit3("Overheal colour", *overheal_rgb)
+                    if changed:
+                        overhealcolour = rgb_f_to_hex(overheal_rgb)
+                    regenbg_rgb = hex_to_rgb_f(regenbgcolour)
+                    changed, regenbg_rgb = imgui.color_edit3("Background colour", *regenbg_rgb)
+                    if changed:
+                        regenbgcolour = rgb_f_to_hex(regenbg_rgb)
+                changed, skulltoggle = imgui.checkbox("Healthbar skull", skulltoggle)
+                changed, numberregentoggle = imgui.checkbox("Overheal number", numberregentoggle)
+                if numberregentoggle:
+                    changed, regensize = imgui.drag_int("Font Size", regensize, 0.5, 1, 128)
+                    changed, regenoffset = imgui.drag_int2("Position", xoffsetregen, yoffsetregen, 1, -screen_width, screen_width)
+                    xoffsetregen, yoffsetregen = regenoffset
+                    numberregen_rgb = hex_to_rgb_f(numberregencolour)
+                    changed, numberregen_rgb = imgui.color_edit3("", *numberregen_rgb)
+                    if changed:
+                        numberregencolour = rgb_f_to_hex(numberregen_rgb)
+                    for row_idx, row in enumerate(anchor_grid):
+                        for col_idx, anchor in enumerate(row):
+                            # Highlight the currently selected anchor
+                            if anchor == regenanchor:
+                                imgui.push_style_color(imgui.COLOR_BUTTON, 0.3, 0.6, 0.9, 1.0)
+                            else:
+                                imgui.push_style_color(imgui.COLOR_BUTTON, 0.4, 0.4, 0.4, 1.0)
+                            
+                            # Draw the button
+                            if imgui.button(anchor, width=25, height=25):
+                                regenanchor = anchor  # update selected anchor
+
+                            imgui.pop_style_color()
+                            if col_idx < len(row) - 1:
+                                imgui.same_line()
+                changed, regen_slider = imgui.slider_float("Regen testing slider", regen_slider, 0, 200, "%.0f")
+                imgui.end_tab_item()
+            if imgui.begin_tab_item("Ammo")[0]:
+                changed, ammotoggle = imgui.checkbox("Ammo", ammotoggle)
+                changed, ammodecotoggle = imgui.checkbox("Ammo decorations", ammodecotoggle)
+                changed, numberammotoggle = imgui.checkbox("Ammo number", numberammotoggle)
+                if numberammotoggle:
+                    changed, ammosize = imgui.drag_int("Font Size", ammosize, 0.5, 1, 128)
+                    changed, ammooffset = imgui.drag_int2("Position", xoffsetammo, yoffsetammo, 1, -screen_width, screen_width)
+                    xoffsetammo, yoffsetammo = ammooffset
+                    numberammo_rgb = hex_to_rgb_f(numberammocolour)
+                    changed, numberammo_rgb = imgui.color_edit3("", *numberammo_rgb)
+                    if changed:
+                        numberammocolour = rgb_f_to_hex(numberammo_rgb)
+                    for row_idx, row in enumerate(anchor_grid):
+                        for col_idx, anchor in enumerate(row):
+                            # Highlight the currently selected anchor
+                            if anchor == ammoanchor:
+                                imgui.push_style_color(imgui.COLOR_BUTTON, 0.3, 0.6, 0.9, 1.0)
+                            else:
+                                imgui.push_style_color(imgui.COLOR_BUTTON, 0.4, 0.4, 0.4, 1.0)
+                            
+                            # Draw the button
+                            if imgui.button(anchor, width=25, height=25):
+                                ammoanchor = anchor  # update selected anchor
+
+                            imgui.pop_style_color()
+                            if col_idx < len(row) - 1:
+                                imgui.same_line()
+                changed, ammo_slider = imgui.slider_int("Ammo testing slider", ammo_slider, 0, 6, "%.0f")
+                imgui.end_tab_item()
+            if imgui.begin_tab_item("Misc")[0]:
+                changed, crosshairtoggle = imgui.checkbox("Crosshair", crosshairtoggle)
+                if crosshairtoggle:
+                    crosshair_rgb = hex_to_rgb_f(crosshaircolour)
+                    changed, crosshair_rgb = imgui.color_edit3("Crosshair colour", *crosshair_rgb)
+                    if changed:
+                        crosshaircolour = rgb_f_to_hex(crosshair_rgb)
+                    crosshairoutline_rgb = hex_to_rgb_f(crosshairoutlinecolour)
+                    changed, crosshairoutline_rgb = imgui.color_edit3("Crosshair outline colour", *crosshairoutline_rgb)
+                    if changed:
+                        crosshairoutlinecolour = rgb_f_to_hex(crosshairoutline_rgb)
+                changed, overlaytoggle = imgui.checkbox("General overlay", overlaytoggle)
+                clicked, current_font = imgui.combo(
+                    "Font", current_font, fonts, 30)
+                font = fonts[current_font]
+                imgui.end_tab_item()
+            imgui.end_tab_bar()
+            overlay.current_hp = hp_slider
+            if hp_slider <= lowhealthvar:
+                overlay.show_skull_red = True
+                overlay.show_skull_green = False
+            else:
+                overlay.show_skull_red = False
+                overlay.show_skull_green = True
+            overlay.health_num_text = f"{healthprefix}{int(hp_slider)}{healthsuffix}"
+            overlay.regen_extent = regen_slider * 1.8
+            overlay.regen_text = f"{regenprefix}{int(regen_slider)}{regensuffix}"
+            overlay.ammo_states = [False] * len(overlay.ammo_states)
+            for i in range(5, 5 - ammo_slider, -1):
+                overlay.ammo_states[i] = True
+            overlay.numberammo_text = f"{ammoprefix}{ammo_slider}{ammosuffix}"
+            imgui.end()
+
+        # Render
+        imgui.render()
+        if show_UI:
+            set_clickthrough(hwnd, False)
+        else:
+            set_clickthrough(hwnd, True)
+        impl.render(imgui.get_draw_data())
+        glfw.swap_buffers(window)
+        time.sleep(1/60)  # ~60 FPS
+
+    impl.shutdown()
+    glfw.terminate()
 
 def main():
     # create QApplication first
     app = QtWidgets.QApplication(sys.argv)
-
+    
     # query screen after creating app
     screen_geom = app.primaryScreen().geometry()
     screen_width = screen_geom.width()
     screen_height = screen_geom.height()
-
+    
     # load pixmaps after app exists
-    green_skull_pix   = load_pixmap_bytes("Health_Bar_Skull_Green.png", (53,57))
-    red_skull_pix     = load_pixmap_bytes("Health_Bar_Skull_Red.png", (53,57))
-    ammo_pix          = load_pixmap_bytes("ammogauge-pistol-ammunition.png", (18,17))
-    healthbar_bg_pix  = load_pixmap_bytes("Health_Bar_BG_Frame.png", (315,100))
-    regen_skull_pix   = load_pixmap_bytes("Regen_Meter_Skull.png", (60,60))
-    overlay_pix       = load_pixmap_bytes("General_Overlay.png", None)
+    green_skull_pix   = load_pixmap_bytes("Health_Bar_Skull_Green.png", (get_dyn_x(53),get_dyn_y(57)))
+    red_skull_pix     = load_pixmap_bytes("Health_Bar_Skull_Red.png", (get_dyn_x(53),get_dyn_y(57)))
+    ammo_bg_pix       = load_pixmap_bytes("ammogauge-BG-Frame.png", (get_dyn_x(352),get_dyn_y(126)))
+    ammo_pix          = load_pixmap_bytes("ammogauge-pistol-ammunition.png", (get_dyn_x(22),get_dyn_y(22)))
+    healthbar_bg_pix  = load_pixmap_bytes("Health_Bar_BG_Frame.png", (get_dyn_x(315),get_dyn_y(100)))
+    regen_skull_pix   = load_pixmap_bytes("Regen_Meter_Skull.png", (get_dyn_x(60),get_dyn_y(60)))
+    overlay_pix       = load_pixmap_bytes("General_Overlay.png", (get_dyn_x(1920),get_dyn_y(1080)))
 
-    pixmaps = (green_skull_pix, red_skull_pix, ammo_pix, healthbar_bg_pix, regen_skull_pix, overlay_pix)
+    pixmaps = (green_skull_pix, red_skull_pix, ammo_bg_pix, ammo_pix, healthbar_bg_pix, regen_skull_pix, overlay_pix)
 
     # create and show overlay
     overlay = Overlay(screen_width, screen_height, pixmaps)
@@ -508,13 +906,14 @@ def main():
 
     # apply native click-through after show()
     overlay.set_click_through_native()
-
+    
+    # start imgui thread
+    threading.Thread(target=imgui_thread, args=(overlay,), daemon=True).start()
+    
     # keyboard hotkeys (global)
-    keyboard.add_hotkey('f3', lambda: (print("Exiting..."+("     "*20)), QtCore.QCoreApplication.quit()))
-    keyboard.add_hotkey('insert', lambda: webbrowser.open("http://localhost:3000"))
-
+    keyboard.add_hotkey('delete', lambda: (print("Exiting..."+("      "*20)), QtCore.QCoreApplication.quit()))
+    keyboard.add_hotkey('insert', lambda: globals().__setitem__('show_UI', not globals()['show_UI']))
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
     main()
-
