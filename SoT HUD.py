@@ -22,10 +22,12 @@ import threading
 import time
 from OpenGL.GL import *
 from fontTools.ttLib import TTFont
+import zipfile
 
 # Paths
 script_dir  = os.path.dirname(os.path.abspath(__file__))
-config_path = os.path.join(script_dir, "config.json")
+config_path = os.path.join(script_dir, "Config", "config.json")
+font_dir    = r"C:\Windows\Fonts"
 
 # defaults settings incase config.json is missing or incomplete
 lowhealthvar            = 70
@@ -38,7 +40,7 @@ numberammocolour        = "#FFFFFF"
 numberregencolour       = "#FFFFFF"
 crosshaircolour         = "#FFFFFF"
 crosshairoutlinecolour  = "#080808"
-font                    = "Times New Roman"
+current_font            = 0
 ammosize                = 25
 hpsize                  = 25
 regensize               = 25
@@ -81,25 +83,51 @@ regen_slider            = 50.0
 ammo_slider             = 5
 low_hp_slider           = lowhealthvar
 lowhealthvarchanged     = False
-current_font            = 0
-font_dir                = "C:\Windows\Fonts"
-font_files              = [os.path.join(font_dir, f) for f in os.listdir(font_dir) if f.lower().endswith((".ttf", ".otf"))]
 healthoffset            = xoffsethealth, yoffsethealth
 ammooffset              = xoffsetammo, yoffsetammo
 regenoffset             = xoffsetregen, yoffsetregen
+Name                    = "My Config"
+popup                   = False
 
-def get_font_title(font_path: str) -> str:
-    font = TTFont(font_path, fontNumber=0)
-    name = font['name']
-    # NameID 4 = Full Font Name
-    for record in name.names:
-        if record.nameID == 4:
-            return str(record.string, record.getEncoding()).strip()
+# get fonts for the text based hud shit
+def find_pyqt_usable_fonts(font_dir=r"C:\Windows\Fonts"):
+    app_started_here = False
+    app = QtWidgets.QApplication.instance()
+    if app is None:
+        app = QtWidgets.QApplication([])
+        app_started_here = True
+    usable = []
+    exts = (".ttf", ".otf", ".ttc")
+    files = [f for f in os.listdir(font_dir) if f.lower().endswith(exts)]
+    for fname in sorted(files, key=str.lower):
+        path = os.path.join(font_dir, fname)
+        try:
+            font_id = QtGui.QFontDatabase.addApplicationFont(path)
+            if font_id != -1:
+                families = QtGui.QFontDatabase.applicationFontFamilies(font_id)
+                if families:
+                    usable.append((path, list(families)))
+                else:
+                    usable.append((path, [os.path.splitext(fname)[0]]))
+        except Exception:
+            continue
+    if app_started_here:
+        app.exit()
+    return usable
 
-
-fonts = [get_font_title(f) for f in font_files]
+usable_fonts = find_pyqt_usable_fonts(font_dir)
+fonts = []
+file_for_name = {}
+for path, families in usable_fonts:
+    display = families[0] if families else os.path.splitext(os.path.basename(path))[0]
+    display = " ".join(display.split())
+    if display not in file_for_name:
+        file_for_name[display] = path
+        fonts.append(display)
 if not fonts:
     fonts = ["No fonts found"]
+    file_for_name = {}
+font = fonts[current_font]
 
 # load config.json
 try:
@@ -130,6 +158,7 @@ def save_config():
         "crosshaircolour": crosshaircolour,
         "crosshairoutlinecolour": crosshairoutlinecolour,
         "font": font,
+        "current_font": current_font,
         "ammosize": ammosize,
         "hpsize": hpsize,
         "regensize": regensize,
@@ -166,50 +195,6 @@ def save_config():
             json.dump(cfg, f, indent=4)
     except Exception:
         pass
-
-# text anchor dict and function
-ALIGN_MAP = {
-    "n":        QtCore.Qt.AlignTop    | QtCore.Qt.AlignHCenter,
-    "ne":       QtCore.Qt.AlignTop    | QtCore.Qt.AlignRight,
-    "e":        QtCore.Qt.AlignRight  | QtCore.Qt.AlignVCenter,
-    "se":       QtCore.Qt.AlignBottom | QtCore.Qt.AlignRight,
-    "s":        QtCore.Qt.AlignBottom | QtCore.Qt.AlignHCenter,
-    "sw":       QtCore.Qt.AlignBottom | QtCore.Qt.AlignLeft,
-    "w":        QtCore.Qt.AlignLeft   | QtCore.Qt.AlignVCenter,
-    "nw":       QtCore.Qt.AlignTop    | QtCore.Qt.AlignLeft,
-    "x":   QtCore.Qt.AlignCenter,                       
-}
-
-def make_rect(x, y, xoffset, yoffset, anchor="x"):
-    w = h = 500
-    half_w, half_h = w // 2, h // 2
-
-    if anchor == "x":
-        return QtCore.QRect((x + int(xoffset)) - half_w, (y + int(yoffset)) - half_h, w, h)
-
-    elif anchor == "n":
-        return QtCore.QRect((x + int(xoffset)) - half_w, (y + int(yoffset)), w, h)
-
-    elif anchor == "ne":
-        return QtCore.QRect((x + int(xoffset)) - w, (y + int(yoffset)), w, h)
-
-    elif anchor == "e":
-        return QtCore.QRect((x + int(xoffset)) - w, (y + int(yoffset)) - half_h, w, h)
-
-    elif anchor == "se":
-        return QtCore.QRect((x + int(xoffset)) - w, (y + int(yoffset)) - h, w, h)
-
-    elif anchor == "s":
-        return QtCore.QRect((x + int(xoffset)) - half_w, (y + int(yoffset)) - h, w, h)
-
-    elif anchor == "sw":
-        return QtCore.QRect((x + int(xoffset)), (y + int(yoffset)) - h, w, h)
-
-    elif anchor == "w":
-        return QtCore.QRect((x + int(xoffset)), (y + int(yoffset)) - half_h, w, h)
-
-    elif anchor == "nw":
-        return QtCore.QRect((x + int(xoffset)), (y + int(yoffset)), w, h)
 
 def hex_to_rgb_f(hex_color):
     hex_color = hex_color.lstrip("#")
@@ -252,6 +237,50 @@ def get_dyn_y(pos):
         sot_height = user32.GetSystemMetrics(1)
     return round((pos / 1080) * sot_height)
 
+# text anchor dict and function
+ALIGN_MAP = {
+    "n":        QtCore.Qt.AlignTop    | QtCore.Qt.AlignHCenter,
+    "ne":       QtCore.Qt.AlignTop    | QtCore.Qt.AlignRight,
+    "e":        QtCore.Qt.AlignRight  | QtCore.Qt.AlignVCenter,
+    "se":       QtCore.Qt.AlignBottom | QtCore.Qt.AlignRight,
+    "s":        QtCore.Qt.AlignBottom | QtCore.Qt.AlignHCenter,
+    "sw":       QtCore.Qt.AlignBottom | QtCore.Qt.AlignLeft,
+    "w":        QtCore.Qt.AlignLeft   | QtCore.Qt.AlignVCenter,
+    "nw":       QtCore.Qt.AlignTop    | QtCore.Qt.AlignLeft,
+    "x":        QtCore.Qt.AlignCenter                       
+}
+
+def make_rect(x, y, xoffset, yoffset, anchor="x"):
+    w = h = get_dyn_x(1920)
+    half_w, half_h = w // 2, h // 2
+
+    if anchor == "x":
+        return QtCore.QRect((x + int(xoffset)) - half_w, (y + int(yoffset)) - half_h, w, h)
+
+    elif anchor == "n":
+        return QtCore.QRect((x + int(xoffset)) - half_w, (y + int(yoffset)), w, h)
+
+    elif anchor == "ne":
+        return QtCore.QRect((x + int(xoffset)) - w, (y + int(yoffset)), w, h)
+
+    elif anchor == "e":
+        return QtCore.QRect((x + int(xoffset)) - w, (y + int(yoffset)) - half_h, w, h)
+
+    elif anchor == "se":
+        return QtCore.QRect((x + int(xoffset)) - w, (y + int(yoffset)) - h, w, h)
+
+    elif anchor == "s":
+        return QtCore.QRect((x + int(xoffset)) - half_w, (y + int(yoffset)) - h, w, h)
+
+    elif anchor == "sw":
+        return QtCore.QRect((x + int(xoffset)), (y + int(yoffset)) - h, w, h)
+
+    elif anchor == "w":
+        return QtCore.QRect((x + int(xoffset)), (y + int(yoffset)) - half_h, w, h)
+
+    elif anchor == "nw":
+        return QtCore.QRect((x + int(xoffset)), (y + int(yoffset)), w, h)
+
 # SoT capture
 def capture_client(hwnd):
     left, top, right, bot = win32gui.GetClientRect(hwnd)
@@ -272,7 +301,7 @@ def capture_client(hwnd):
 
 # load shit as qpixmap
 def load_pixmap_bytes(filename, size=None):
-    path = os.path.join(script_dir, filename)
+    path = os.path.join(script_dir, "Config", filename)
     if not os.path.exists(path):
         return None
     img = Image.open(path).convert("RGBA")
@@ -284,6 +313,7 @@ def load_pixmap_bytes(filename, size=None):
     pix = QtGui.QPixmap()
     pix.loadFromData(data)
     return pix
+    
 
 class Overlay(QtWidgets.QWidget):
     # initializing the overlay
@@ -344,6 +374,37 @@ class Overlay(QtWidgets.QWidget):
             win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, exStyle)
         except Exception as e:
             print("Failed to set native click-through:", e)
+
+    def load_config(self, path):
+        with zipfile.ZipFile(path, 'r') as zip_ref:
+            zip_ref.extractall(os.path.join(script_dir, "Config"))
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                config_data = json.load(f)
+                for key, value in config_data.items():
+                    if key in globals():
+                        globals()[key] = value
+        except Exception:
+            pass
+        save_config()
+        green_skull_pix   = load_pixmap_bytes("Health_Bar_Skull_Green.png", (get_dyn_x(53),get_dyn_y(57)))
+        red_skull_pix     = load_pixmap_bytes("Health_Bar_Skull_Red.png", (get_dyn_x(53),get_dyn_y(57)))
+        ammo_bg_pix       = load_pixmap_bytes("ammogauge-BG-Frame.png", (get_dyn_x(352),get_dyn_y(126)))
+        ammo_pix          = load_pixmap_bytes("ammogauge-pistol-ammunition.png", (get_dyn_x(22),get_dyn_y(22)))
+        healthbar_bg_pix  = load_pixmap_bytes("Health_Bar_BG_Frame.png", (get_dyn_x(315),get_dyn_y(100)))
+        regen_skull_pix   = load_pixmap_bytes("Regen_Meter_Skull.png", (get_dyn_x(60),get_dyn_y(60)))
+        overlay_pix       = load_pixmap_bytes("General_Overlay.png", (get_dyn_x(1920),get_dyn_y(1080)))
+        pixmaps           = (green_skull_pix, red_skull_pix, ammo_bg_pix, ammo_pix, healthbar_bg_pix, regen_skull_pix, overlay_pix)
+        (
+            self.green_skull_pix,
+            self.red_skull_pix,
+            self.ammo_bg_pix,
+            self.ammo_pix,
+            self.healthbar_bg_pix,
+            self.regen_skull_pix,
+            self.overlay_pix,
+        ) = pixmaps
+        self.update()
 
     # this is the shit that handles the logic and instructs the painter what parts it should draw
     def update_loop(self):
@@ -633,6 +694,8 @@ def imgui_thread(overlay):
     global low_hp_slider
     global lowhealthvarchanged
     global current_font
+    global Name
+    global popup
     
     anchor_grid = [
         ["nw", "n", "ne"],
@@ -706,7 +769,85 @@ def imgui_thread(overlay):
         if show_UI:
             # All the healthbar customization options
             imgui.begin("SoT HUD config", flags=imgui.WINDOW_ALWAYS_AUTO_RESIZE |
-                                            imgui.WINDOW_NO_SCROLLBAR)
+                                            imgui.WINDOW_NO_SCROLLBAR|
+                                            imgui.WINDOW_NO_COLLAPSE|
+                                            imgui.WINDOW_MENU_BAR)
+            if imgui.begin_menu_bar():
+                if imgui.begin_menu('File'):
+                    changed, _ = imgui.menu_item('Export config', None, False, True)
+                    if changed:
+                        popup = True
+                    with imgui.begin_menu('Open Config', True) as open_recent_menu:
+                        if open_recent_menu.opened:
+                            for file in os.listdir(os.path.join(script_dir, "YourConfigs")):
+                                changed, _ = imgui.menu_item(file, None, False, True)
+                                if changed:
+                                    overlay.load_config(os.path.join(script_dir, "YourConfigs", file))
+                    imgui.end_menu()
+                imgui.end_menu_bar()
+            if popup:
+                imgui.open_popup("select-popup")
+                popup = False
+            if imgui.begin_popup("select-popup"):
+                imgui.text("Save config as:")
+                _, Name = imgui.input_text("##Name", Name, 29)
+                if imgui.button("Confirm"):
+                    cfg = {
+                        "lowhealthvar": lowhealthvar,
+                        "lowhealthcolour": lowhealthcolour,
+                        "healthcolour": healthcolour,
+                        "overhealcolour": overhealcolour,
+                        "regenbgcolour": regenbgcolour,
+                        "numberhealthcolour": numberhealthcolour,
+                        "numberammocolour": numberammocolour,
+                        "numberregencolour": numberregencolour,
+                        "crosshaircolour": crosshaircolour,
+                        "crosshairoutlinecolour": crosshairoutlinecolour,
+                        "font": font,
+                        "current_font": current_font,
+                        "ammosize": ammosize,
+                        "hpsize": hpsize,
+                        "regensize": regensize,
+                        "ammotoggle": ammotoggle,
+                        "ammodecotoggle": ammodecotoggle,
+                        "crosshairtoggle": crosshairtoggle,
+                        "healthbartoggle": healthbartoggle,
+                        "healthbardecotoggle": healthbardecotoggle,
+                        "skulltoggle": skulltoggle,
+                        "regentoggle": regentoggle,
+                        "overlaytoggle": overlaytoggle,
+                        "numberhealthtoggle": numberhealthtoggle,
+                        "numberammotoggle": numberammotoggle,
+                        "numberregentoggle": numberregentoggle,
+                        "healthanchor": healthanchor,
+                        "xoffsethealth": xoffsethealth,
+                        "yoffsethealth": yoffsethealth,
+                        "ammoanchor": ammoanchor,
+                        "xoffsetammo": xoffsetammo,
+                        "yoffsetammo": yoffsetammo,
+                        "regenanchor": regenanchor,
+                        "xoffsetregen": xoffsetregen,
+                        "yoffsetregen": yoffsetregen,
+                        "healthprefix": healthprefix,
+                        "healthsuffix": healthsuffix,
+                        "ammoprefix": ammoprefix,
+                        "ammosuffix": ammosuffix,
+                        "regenprefix": regenprefix,
+                        "regensuffix": regensuffix
+                    }
+                    try:
+                        with open(config_path, "w", encoding="utf-8") as f:
+                            json.dump(cfg, f, indent=4)
+                    except Exception:
+                        pass
+                    with zipfile.ZipFile(os.path.join(script_dir, "YourConfigs", Name+".zip"), 'w', zipfile.ZIP_DEFLATED) as zip_ref:
+                        for root, _, files in os.walk(os.path.join(script_dir, "Config")):
+                            for file in files:
+                                file_path = os.path.join(root, file)
+                                arcname = os.path.relpath(file_path, os.path.join(script_dir, "Config"))
+                                zip_ref.write(file_path, arcname)
+                    imgui.close_current_popup()
+                imgui.end_popup()    
             imgui.begin_tab_bar("MainTabBar")
             if imgui.begin_tab_item("Healthbar")[0]:
                 changed, healthbartoggle = imgui.checkbox("Healthbar", healthbartoggle)
@@ -936,7 +1077,7 @@ def main():
     threading.Thread(target=imgui_thread, args=(overlay,), daemon=True).start()
     
     # keyboard hotkeys (global)
-    keyboard.add_hotkey('delete', lambda: (print("Exiting..."+("      "*20)), QtCore.QCoreApplication.quit()))
+    keyboard.add_hotkey('delete', lambda: (print("Exiting..."+("      "*20)), save_config(), QtCore.QCoreApplication.quit()))
     keyboard.add_hotkey('insert', lambda: globals().__setitem__('show_UI', not globals()['show_UI']))
     sys.exit(app.exec_())
 
