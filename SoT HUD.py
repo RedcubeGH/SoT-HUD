@@ -621,7 +621,6 @@ def imgui_thread(overlay):
     global xoffsetregen
     global yoffsetregen
     global regenoffset
-    #
     global healthprefix
     global healthsuffix
     global ammoprefix
@@ -803,6 +802,19 @@ def imgui_thread(overlay):
                             imgui.pop_style_color()
                             if col_idx < len(row) - 1:
                                 imgui.same_line()
+                    imgui.columns(3, "regen_columns", False)  # False disables borders
+                    imgui.set_column_width(0, 90)
+                    imgui.push_item_width(80)
+                    changed, regenprefix = imgui.input_text(" ", regenprefix, 10)
+                    imgui.next_column()
+                    imgui.set_column_width(1, 30)
+                    imgui.text(f"{int(regen_slider)}")
+                    imgui.next_column()
+                    imgui.set_column_width(2, 136)
+                    changed, regensuffix = imgui.input_text("  ", regensuffix, 11)
+                    imgui.pop_item_width()
+                    imgui.next_column()
+                    imgui.columns(1)
                 changed, regen_slider = imgui.slider_float("Regen testing slider", regen_slider, 0, 200, "%.0f")
                 imgui.end_tab_item()
             if imgui.begin_tab_item("Ammo")[0]:
@@ -832,6 +844,19 @@ def imgui_thread(overlay):
                             imgui.pop_style_color()
                             if col_idx < len(row) - 1:
                                 imgui.same_line()
+                    imgui.columns(3, "ammo_columns", False)  # False disables borders
+                    imgui.set_column_width(0, 90)
+                    imgui.push_item_width(80)
+                    changed, ammoprefix = imgui.input_text(" ", ammoprefix, 10)
+                    imgui.next_column()
+                    imgui.set_column_width(1, 30)
+                    imgui.text(f"{int(ammo_slider)}")
+                    imgui.next_column()
+                    imgui.set_column_width(2, 136)
+                    changed, ammosuffix = imgui.input_text("  ", ammosuffix, 11)
+                    imgui.pop_item_width()
+                    imgui.next_column()
+                    imgui.columns(1)
                 changed, ammo_slider = imgui.slider_int("Ammo testing slider", ammo_slider, 0, 6, "%.0f")
                 imgui.end_tab_item()
             if imgui.begin_tab_item("Misc")[0]:
