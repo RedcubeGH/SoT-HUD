@@ -91,43 +91,49 @@ popup                   = False
 
 # get fonts for the text based hud shit
 def find_pyqt_usable_fonts(font_dir=r"C:\Windows\Fonts"):
-    app_started_here = False
-    app = QtWidgets.QApplication.instance()
-    if app is None:
-        app = QtWidgets.QApplication([])
-        app_started_here = True
-    usable = []
-    exts = (".ttf", ".otf", ".ttc")
-    files = [f for f in os.listdir(font_dir) if f.lower().endswith(exts)]
-    for fname in sorted(files, key=str.lower):
-        path = os.path.join(font_dir, fname)
-        try:
-            font_id = QtGui.QFontDatabase.addApplicationFont(path)
-            if font_id != -1:
-                families = QtGui.QFontDatabase.applicationFontFamilies(font_id)
-                if families:
-                    usable.append((path, list(families)))
-                else:
-                    usable.append((path, [os.path.splitext(fname)[0]]))
-        except Exception:
-            continue
-    if app_started_here:
-        app.exit()
-    return usable
-
-usable_fonts = find_pyqt_usable_fonts(font_dir)
-fonts = []
-file_for_name = {}
-for path, families in usable_fonts:
-    display = families[0] if families else os.path.splitext(os.path.basename(path))[0]
-    display = " ".join(display.split())
-    if display not in file_for_name:
-        file_for_name[display] = path
-        fonts.append(display)
-if not fonts:
-    fonts = ["No fonts found"]
+    try:
+        app_started_here = False
+        app = QtWidgets.QApplication.instance()
+        if app is None:
+            app = QtWidgets.QApplication([])
+            app_started_here = True
+        usable = []
+        exts = (".ttf", ".otf", ".ttc")
+        files = [f for f in os.listdir(font_dir) if f.lower().endswith(exts)]
+        for fname in sorted(files, key=str.lower):
+            path = os.path.join(font_dir, fname)
+            try:
+                font_id = QtGui.QFontDatabase.addApplicationFont(path)
+                if font_id != -1:
+                    families = QtGui.QFontDatabase.applicationFontFamilies(font_id)
+                    if families:
+                        usable.append((path, list(families)))
+                    else:
+                        usable.append((path, [os.path.splitext(fname)[0]]))
+            except Exception:
+                continue
+        if app_started_here:
+            app.exit()
+        return usable
+    except:
+        pass
+try:
+    usable_fonts = find_pyqt_usable_fonts(font_dir)
+    fonts = []
     file_for_name = {}
-font = fonts[current_font]
+    for path, families in usable_fonts:
+        display = families[0] if families else os.path.splitext(os.path.basename(path))[0]
+        display = " ".join(display.split())
+        if display not in file_for_name:
+            file_for_name[display] = path
+            fonts.append(display)
+    font = fonts[current_font]
+except:
+    pass
+
+if not fonts:
+    fonts[0] = "No fonts found"
+    file_for_name = {}
 
 # load config.json
 try:
