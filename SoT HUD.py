@@ -27,7 +27,6 @@ import zipfile
 # Paths
 script_dir  = os.path.dirname(os.path.abspath(__file__))
 config_path = os.path.join(script_dir, "Config", "config.json")
-font_dir    = r"C:\Windows\Fonts"
 
 # defaults settings incase config.json is missing or incomplete
 lowhealthvar            = 70
@@ -40,7 +39,7 @@ numberammocolour        = "#FFFFFF"
 numberregencolour       = "#FFFFFF"
 crosshaircolour         = "#FFFFFF"
 crosshairoutlinecolour  = "#080808"
-current_font            = 0
+font                    = "Times New Roman"
 ammosize                = 25
 hpsize                  = 25
 regensize               = 25
@@ -88,52 +87,7 @@ ammooffset              = xoffsetammo, yoffsetammo
 regenoffset             = xoffsetregen, yoffsetregen
 Name                    = "My Config"
 popup                   = False
-
-# get fonts for the text based hud shit
-def find_pyqt_usable_fonts(font_dir=r"C:\Windows\Fonts"):
-    try:
-        app_started_here = False
-        app = QtWidgets.QApplication.instance()
-        if app is None:
-            app = QtWidgets.QApplication([])
-            app_started_here = True
-        usable = []
-        exts = (".ttf", ".otf", ".ttc")
-        files = [f for f in os.listdir(font_dir) if f.lower().endswith(exts)]
-        for fname in sorted(files, key=str.lower):
-            path = os.path.join(font_dir, fname)
-            try:
-                font_id = QtGui.QFontDatabase.addApplicationFont(path)
-                if font_id != -1:
-                    families = QtGui.QFontDatabase.applicationFontFamilies(font_id)
-                    if families:
-                        usable.append((path, list(families)))
-                    else:
-                        usable.append((path, [os.path.splitext(fname)[0]]))
-            except Exception:
-                continue
-        if app_started_here:
-            app.exit()
-        return usable
-    except:
-        pass
-try:
-    usable_fonts = find_pyqt_usable_fonts(font_dir)
-    fonts = []
-    file_for_name = {}
-    for path, families in usable_fonts:
-        display = families[0] if families else os.path.splitext(os.path.basename(path))[0]
-        display = " ".join(display.split())
-        if display not in file_for_name:
-            file_for_name[display] = path
-            fonts.append(display)
-    font = fonts[current_font]
-except:
-    pass
-
-if not fonts:
-    fonts[0] = "No fonts found"
-    file_for_name = {}
+current_font            = 0
 
 # load config.json
 try:
@@ -164,7 +118,6 @@ def save_config():
         "crosshaircolour": crosshaircolour,
         "crosshairoutlinecolour": crosshairoutlinecolour,
         "font": font,
-        "current_font": current_font,
         "ammosize": ammosize,
         "hpsize": hpsize,
         "regensize": regensize,
@@ -331,7 +284,6 @@ class Overlay(QtWidgets.QWidget):
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
         self.setAttribute(QtCore.Qt.WA_NoSystemBackground, True)
         self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowTransparentForInput)
-
         self.setGeometry(0, 0, screen_width, screen_height)
 
         # pixmaps passed from main
@@ -344,6 +296,7 @@ class Overlay(QtWidgets.QWidget):
          self.overlay_pix) = pixmaps
 
         # internal state
+        self.fonts = QtGui.QFontDatabase().families()
         self.screen_img = None
         self.calibrated_ammo_colour = calibrated_ammo_colour
         self.ammo_states = [False]*6
@@ -810,7 +763,6 @@ def imgui_thread(overlay):
                         "crosshaircolour": crosshaircolour,
                         "crosshairoutlinecolour": crosshairoutlinecolour,
                         "font": font,
-                        "current_font": current_font,
                         "ammosize": ammosize,
                         "hpsize": hpsize,
                         "regensize": regensize,
@@ -1019,8 +971,8 @@ def imgui_thread(overlay):
                         crosshairoutlinecolour = rgb_f_to_hex(crosshairoutline_rgb)
                 changed, overlaytoggle = imgui.checkbox("General overlay", overlaytoggle)
                 clicked, current_font = imgui.combo(
-                    "Font", current_font, fonts, 30)
-                font = fonts[current_font]
+                    "Font", current_font, overlay.fonts, 30)
+                font = overlay.fonts[current_font]
                 imgui.end_tab_item()
             imgui.end_tab_bar()
             overlay.current_hp = hp_slider
