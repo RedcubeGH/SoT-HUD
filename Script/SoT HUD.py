@@ -23,6 +23,7 @@ import time
 from OpenGL.GL import *
 from fontTools.ttLib import TTFont
 import zipfile
+import subprocess
 
 # Paths
 script_dir  = os.path.dirname(os.path.abspath(__file__))
@@ -275,10 +276,48 @@ def load_pixmap_bytes(filename, size=None):
     pix.loadFromData(data)
     return pix
     
+class ConfigWatcher:
+    def __init__(self, parent, check_interval=1.0):
+        self.parent = parent
+        self.check_interval = check_interval
+        self.config_dir = os.path.join(os.path.dirname(__file__), "..", "Config")
+        self.running = True
+
+        # Initialize timestamps (assign the result to last_mod_times)
+        self.last_mod_times = self.scan_files()
+
+        # Start watcher thread
+        self.thread = threading.Thread(target=self.watch_loop, daemon=True)
+        self.thread.start()
+
+    def scan_files(self):
+        #gives dict of {filepath: last_modified_time} for all files in Config
+        mod_times = {}
+        for root, _, files in os.walk(self.config_dir):
+            for file in files:
+                path = os.path.join(root, file)
+                mod_times[path] = os.path.getmtime(path)
+        return mod_times
+
+    def watch_loop(self):
+        while self.running:
+            current = self.scan_files()
+
+            # detects any changed files
+            if current != self.last_mod_times:
+                self.last_mod_times = current
+                self.parent.update_config()
+                #print("Config updated")
+
+            time.sleep(self.check_interval)
+
+    def stop(self):
+        self.running = False
 
 class Overlay(QtWidgets.QWidget):
     # initializing the overlay
     def __init__(self, screen_width, screen_height, pixmaps):
+        self.config_watcher = ConfigWatcher(self)
         flags = QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.FramelessWindowHint | QtCore.Qt.Tool
         super().__init__(None, flags)
         self.screen_width = screen_width
@@ -335,10 +374,8 @@ class Overlay(QtWidgets.QWidget):
             win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, exStyle)
         except Exception as e:
             print("Failed to set native click-through:", e)
-
-    def load_config(self, path):
-        with zipfile.ZipFile(path, 'r') as zip_ref:
-            zip_ref.extractall(os.path.join(script_dir, "..", "Config"))
+            
+    def update_config(self):
         try:
             with open(config_path, "r", encoding="utf-8") as f:
                 config_data = json.load(f)
@@ -347,7 +384,6 @@ class Overlay(QtWidgets.QWidget):
                         globals()[key] = value
         except Exception:
             pass
-        save_config()
         green_skull_pix   = load_pixmap_bytes("Health_Bar_Skull_Green.png", (get_dyn_x(53),get_dyn_y(57)))
         red_skull_pix     = load_pixmap_bytes("Health_Bar_Skull_Red.png", (get_dyn_x(53),get_dyn_y(57)))
         ammo_bg_pix       = load_pixmap_bytes("ammogauge-BG-Frame.png", (get_dyn_x(352),get_dyn_y(126)))
@@ -366,6 +402,10 @@ class Overlay(QtWidgets.QWidget):
             self.overlay_pix,
         ) = pixmaps
         self.update()
+
+    def load_config(self, path):
+        with zipfile.ZipFile(path, 'r') as zip_ref:
+            zip_ref.extractall(os.path.join(script_dir, "..", "Config"))
 
     # this is the shit that handles the logic and instructs the painter what parts it should draw
     def update_loop(self):
@@ -656,6 +696,7 @@ def imgui_thread(overlay):
     global Name
     global popup
     global staticcrosshair
+    global show_UI
     
     anchor_grid = [
         ["nw", "n", "ne"],
@@ -827,6 +868,15 @@ def imgui_thread(overlay):
                     if changed:
                         lowhealthcolour = rgb_f_to_hex(lowhealth_rgb)
                 changed, healthbardecotoggle = imgui.checkbox("Healthbar decorations", healthbardecotoggle)
+                if healthbardecotoggle:
+                    imgui.same_line()
+                    if imgui.button("Open in Explorer"):
+                        try:
+                            file_to_select = os.path.normpath(os.path.join(script_dir, "..", "Config", "Health_Bar_BG_Frame.png"))
+                            subprocess.run(["explorer", "/select,", file_to_select])
+                        except Exception as e:
+                            os.startfile(os.path.join(script_dir, "..", "Config"))
+                        show_UI = False
                 changed, numberhealthtoggle = imgui.checkbox("Health number", numberhealthtoggle)
                 if numberhealthtoggle:
                     changed, hpsize = imgui.drag_int("Font Size", hpsize, 0.5, 1, 128)
@@ -879,6 +929,15 @@ def imgui_thread(overlay):
                     if changed:
                         regenbgcolour = rgb_f_to_hex(regenbg_rgb)
                 changed, skulltoggle = imgui.checkbox("Healthbar skull", skulltoggle)
+                if skulltoggle:
+                    imgui.same_line()
+                    if imgui.button("Open in Explorer"):
+                        try:
+                            file_to_select = os.path.normpath(os.path.join(script_dir, "..", "Config", "Health_Bar_Skull_Green.png"))
+                            subprocess.run(["explorer", "/select,", file_to_select])
+                        except Exception as e:
+                            os.startfile(os.path.join(script_dir, "..", "Config"))
+                        show_UI = False
                 changed, numberregentoggle = imgui.checkbox("Overheal number", numberregentoggle)
                 if numberregentoggle:
                     changed, regensize = imgui.drag_int("Font Size", regensize, 0.5, 1, 128)
@@ -920,7 +979,25 @@ def imgui_thread(overlay):
                 imgui.end_tab_item()
             if imgui.begin_tab_item("Ammo")[0]:
                 changed, ammotoggle = imgui.checkbox("Ammo", ammotoggle)
+                if ammotoggle:
+                    imgui.same_line()
+                    if imgui.button("Open in Explorer"):
+                        try:
+                            file_to_select = os.path.normpath(os.path.join(script_dir, "..", "Config", "ammogauge-pistol-ammunition.png"))
+                            subprocess.run(["explorer", "/select,", file_to_select])
+                        except Exception as e:
+                            os.startfile(os.path.join(script_dir, "..", "Config"))
+                        show_UI = False
                 changed, ammodecotoggle = imgui.checkbox("Ammo decorations", ammodecotoggle)
+                if ammodecotoggle:
+                    imgui.same_line()
+                    if imgui.button("Open in Explorer "):
+                        try:
+                            file_to_select = os.path.normpath(os.path.join(script_dir, "..", "Config", "ammogauge-BG-Frame.png"))
+                            subprocess.run(["explorer", "/select,", file_to_select])
+                        except Exception as e:
+                            os.startfile(os.path.join(script_dir, "..", "Config"))
+                        show_UI = False
                 changed, numberammotoggle = imgui.checkbox("Ammo number", numberammotoggle)
                 if numberammotoggle:
                     changed, ammosize = imgui.drag_int("Font Size", ammosize, 0.5, 1, 128)
@@ -973,6 +1050,15 @@ def imgui_thread(overlay):
                     if changed:
                         crosshairoutlinecolour = rgb_f_to_hex(crosshairoutline_rgb)
                 changed, overlaytoggle = imgui.checkbox("General overlay", overlaytoggle)
+                if overlaytoggle:
+                    imgui.same_line()
+                    if imgui.button("Open in Explorer"):
+                        try:
+                            file_to_select = os.path.normpath(os.path.join(script_dir, "..", "Config", "General_Overlay.png"))
+                            subprocess.run(["explorer", "/select,", file_to_select])
+                        except Exception as e:
+                            os.startfile(os.path.join(script_dir, "..", "Config"))
+                        show_UI = False
                 try:
                     current_font = overlay.fonts.index(font)
                 except ValueError:
@@ -1046,7 +1132,7 @@ def main():
     
     # keyboard hotkeys (global)
     keyboard.add_hotkey('delete', lambda: (print("Exiting..."+("      "*20)), save_config(), QtCore.QCoreApplication.quit()))
-    keyboard.add_hotkey('insert', lambda: globals().__setitem__('show_UI', not globals()['show_UI']))
+    keyboard.add_hotkey('insert', lambda: (globals().__setitem__('show_UI', not globals()['show_UI']), setattr(overlay, 'regen_extent', 0)))
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
