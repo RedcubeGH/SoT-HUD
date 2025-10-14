@@ -46,6 +46,7 @@ regensize               = 25
 ammotoggle              = True
 ammodecotoggle          = True
 crosshairtoggle         = False
+staticcrosshair         = False
 healthbartoggle         = True
 healthbardecotoggle     = True
 skulltoggle             = True
@@ -124,6 +125,7 @@ def save_config():
         "ammotoggle": ammotoggle,
         "ammodecotoggle": ammodecotoggle,
         "crosshairtoggle": crosshairtoggle,
+        "staticcrosshair": staticcrosshair,
         "healthbartoggle": healthbartoggle,
         "healthbardecotoggle": healthbardecotoggle,
         "skulltoggle": skulltoggle,
@@ -495,8 +497,6 @@ class Overlay(QtWidgets.QWidget):
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-
-        # print(f"{get_dyn_x(140)}x, {get_dyn_y(981)}y")
         
         # overlay image
         if self.show_overlay and overlaytoggle or show_UI and overlaytoggle:
@@ -523,7 +523,7 @@ class Overlay(QtWidgets.QWidget):
                     painter.drawPixmap(x - self.ammo_pix.width()//2, y - self.ammo_pix.height()//2, self.ammo_pix)
         
         # crosshair
-        if crosshairtoggle and any(self.ammo_states) or show_UI and crosshairtoggle:
+        if crosshairtoggle and (any(self.ammo_states) or staticcrosshair) or show_UI and crosshairtoggle:
             painter.setBrush(QtGui.QColor(crosshaircolour))
             painter.setPen(QtGui.QColor(crosshairoutlinecolour))
             diameter = 4
@@ -655,6 +655,7 @@ def imgui_thread(overlay):
     global current_font
     global Name
     global popup
+    global staticcrosshair
     
     anchor_grid = [
         ["nw", "n", "ne"],
@@ -769,6 +770,7 @@ def imgui_thread(overlay):
                         "ammotoggle": ammotoggle,
                         "ammodecotoggle": ammodecotoggle,
                         "crosshairtoggle": crosshairtoggle,
+                        "staticcrosshair": staticcrosshair,
                         "healthbartoggle": healthbartoggle,
                         "healthbardecotoggle": healthbardecotoggle,
                         "skulltoggle": skulltoggle,
@@ -961,6 +963,7 @@ def imgui_thread(overlay):
             if imgui.begin_tab_item("Misc")[0]:
                 changed, crosshairtoggle = imgui.checkbox("Crosshair", crosshairtoggle)
                 if crosshairtoggle:
+                    changed, staticcrosshair = imgui.checkbox("Static crosshair", staticcrosshair)
                     crosshair_rgb = hex_to_rgb_f(crosshaircolour)
                     changed, crosshair_rgb = imgui.color_edit3("Crosshair colour", *crosshair_rgb)
                     if changed:
@@ -973,6 +976,8 @@ def imgui_thread(overlay):
                 clicked, current_font = imgui.combo(
                     "Font", current_font, overlay.fonts, 30)
                 font = overlay.fonts[current_font]
+                if imgui.button("Recalibrate ammo colour"):
+                    overlay.calibrated_ammo_colour = (0,0,0)
                 imgui.end_tab_item()
             imgui.end_tab_bar()
             overlay.current_hp = hp_slider
