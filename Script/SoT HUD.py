@@ -5,7 +5,6 @@ import os
 import sys
 import json
 import math
-import webbrowser
 from io import BytesIO
 from PIL import Image
 import win32gui
@@ -15,13 +14,11 @@ from ctypes import windll
 import keyboard
 from PyQt5 import QtCore, QtGui, QtWidgets, QtCore
 import glfw
-import OpenGL.GL as gl
 import imgui
 from imgui.integrations.glfw import GlfwRenderer
 import threading
 import time
 from OpenGL.GL import *
-from fontTools.ttLib import TTFont
 import zipfile
 import subprocess
 
