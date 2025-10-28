@@ -21,6 +21,8 @@ import time
 from OpenGL.GL import *
 import zipfile
 import subprocess
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 
 # Paths
 script_dir  = os.path.dirname(os.path.abspath(__file__))
@@ -151,6 +153,8 @@ class Config:
             "regensuffix":              self.regensuffix,
             "calibrated_ammo_colour":   self.calibrated_ammo_colour
         }
+        if export:
+            cfg.pop("calibrated_ammo_colour", None)
         try:
             with open(config_path, "w", encoding="utf-8") as f:
                 json.dump(cfg, f, indent=4)
@@ -263,63 +267,61 @@ def capture_client(hwnd):
     # cleanup
     win32gui.DeleteObject(saveBitMap.GetHandle()); saveDC.DeleteDC(); mfcDC.DeleteDC(); win32gui.ReleaseDC(hwnd, hwndDC)
     return img
+    
+class PixmapManager:
+    def __init__(self, base_dir):
+        self.base_dir = base_dir
+        self.cache = {}
 
-# load shit as qpixmap
-def load_pixmap_bytes(filename, size=None):
-    path = os.path.join(script_dir, "..", "Config", filename)
-    if not os.path.exists(path):
-        return None
-    img = Image.open(path).convert("RGBA")
-    if size:
-        img = img.resize(size, Image.LANCZOS)
-    buf = BytesIO()
-    img.save(buf, format="PNG")
-    data = buf.getvalue()
-    pix = QtGui.QPixmap()
-    pix.loadFromData(data)
-    return pix
+    def load(self, name, size=None):
+        key = (name, size)
+        path = os.path.join(self.base_dir, name)
+        if not os.path.exists(path):
+            return None
+        img = Image.open(path).convert("RGBA")
+        if size:
+            img = img.resize(size, Image.LANCZOS)
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        pix = QtGui.QPixmap()
+        pix.loadFromData(buf.getvalue())
+        self.cache[key] = pix
+        return pix
     
 class ConfigWatcher:
-    def __init__(self, parent, check_interval=1.0):
+    def __init__(self, parent):
         self.parent = parent
-        self.check_interval = check_interval
         self.config_dir = os.path.join(os.path.dirname(__file__), "..", "Config")
-        self.running = True
+        self.observer = None
+        self._start()
 
-        # Initialize timestamps (assign the result to last_mod_times)
-        self.last_mod_times = self.scan_files()
+    def _start(self):
+        if not os.path.exists(self.config_dir):
+            os.makedirs(self.config_dir)
 
-        # Start watcher thread
-        self.thread = threading.Thread(target=self.watch_loop, daemon=True)
-        self.thread.start()
-
-    def scan_files(self):
-        #gives dict of {filepath: last_modified_time} for all files in Config
-        mod_times = {}
-        for root, _, files in os.walk(self.config_dir):
-            for file in files:
-                path = os.path.join(root, file)
-                mod_times[path] = os.path.getmtime(path)
-        return mod_times
-
-    def watch_loop(self):
-        while self.running:
-            current = self.scan_files()
-
-            # detects any changed files
-            if current != self.last_mod_times:
-                self.last_mod_times = current
-                self.parent.update_config()
-                #print("Config updated")
-
-            time.sleep(self.check_interval)
-
+        event_handler = _ConfigEventHandler(self.parent.update_config)
+        self.observer = Observer()
+        self.observer.schedule(event_handler, self.config_dir, recursive=True)
+        self.observer.start()
+        
     def stop(self):
-        self.running = False
+        """Stops the watchdog observer thread cleanly."""
+        if self.observer:
+            self.observer.stop()
+            self.observer.join()
+
+class _ConfigEventHandler(FileSystemEventHandler):
+    def __init__(self, callback):
+        super().__init__()
+        self.callback = callback
+
+    def on_any_event(self, event):
+        if not event.is_directory:
+            self.callback()
 
 class Overlay(QtWidgets.QWidget):
     # initializing the overlay
-    def __init__(self, screen_width, screen_height, pixmaps):
+    def __init__(self, screen_width, screen_height):
         self.config_watcher = ConfigWatcher(self)
         flags = QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.FramelessWindowHint | QtCore.Qt.Tool
         super().__init__(None, flags)
@@ -331,13 +333,7 @@ class Overlay(QtWidgets.QWidget):
         self.setGeometry(0, 0, screen_width, screen_height)
 
         # pixmaps passed from main
-        (self.green_skull_pix,
-         self.red_skull_pix,
-         self.ammo_bg_pix,
-         self.ammo_pix,
-         self.healthbar_bg_pix,
-         self.regen_skull_pix,
-         self.overlay_pix) = pixmaps
+        self.load_all()
 
         # internal state
         self.fonts = QtGui.QFontDatabase().families()
@@ -386,24 +382,20 @@ class Overlay(QtWidgets.QWidget):
                         setattr(Config, key, value)
         except Exception:
             pass
-        green_skull_pix   = load_pixmap_bytes("Health_Bar_Skull_Green.png", (get_dyn_x(53),get_dyn_y(57)))
-        red_skull_pix     = load_pixmap_bytes("Health_Bar_Skull_Red.png", (get_dyn_x(53),get_dyn_y(57)))
-        ammo_bg_pix       = load_pixmap_bytes("ammogauge-BG-Frame.png", (get_dyn_x(352),get_dyn_y(126)))
-        ammo_pix          = load_pixmap_bytes("ammogauge-pistol-ammunition.png", (get_dyn_x(22),get_dyn_y(22)))
-        healthbar_bg_pix  = load_pixmap_bytes("Health_Bar_BG_Frame.png", (get_dyn_x(315),get_dyn_y(100)))
-        regen_skull_pix   = load_pixmap_bytes("Regen_Meter_Skull.png", (get_dyn_x(60),get_dyn_y(60)))
-        overlay_pix       = load_pixmap_bytes("General_Overlay.png", (get_dyn_x(1920),get_dyn_y(1080)))
-        pixmaps           = (green_skull_pix, red_skull_pix, ammo_bg_pix, ammo_pix, healthbar_bg_pix, regen_skull_pix, overlay_pix)
-        (
-            self.green_skull_pix,
-            self.red_skull_pix,
-            self.ammo_bg_pix,
-            self.ammo_pix,
-            self.healthbar_bg_pix,
-            self.regen_skull_pix,
-            self.overlay_pix,
-        ) = pixmaps
+        time.sleep(0.1)
+        self.load_all()
         self.update()
+
+    def load_all(self):
+        pm = PixmapManager(os.path.join(script_dir, "..", "Config"))
+        self.green_skull_pix   = pm.load("Health_Bar_Skull_Green.png", (get_dyn_x(53),get_dyn_y(57)))
+        self.green_skull_pix   = pm.load("Health_Bar_Skull_Green.png", (get_dyn_x(53), get_dyn_y(57)))
+        self.red_skull_pix     = pm.load("Health_Bar_Skull_Red.png", (get_dyn_x(53), get_dyn_y(57)))
+        self.ammo_bg_pix       = pm.load("ammogauge-BG-Frame.png", (get_dyn_x(352), get_dyn_y(126)))
+        self.ammo_pix          = pm.load("ammogauge-pistol-ammunition.png", (get_dyn_x(22), get_dyn_y(22)))
+        self.healthbar_bg_pix  = pm.load("Health_Bar_BG_Frame.png", (get_dyn_x(315), get_dyn_y(100)))
+        self.regen_skull_pix   = pm.load("Regen_Meter_Skull.png", (get_dyn_x(60), get_dyn_y(60)))
+        self.overlay_pix       = pm.load("General_Overlay.png", (get_dyn_x(1920), get_dyn_y(1080)))
 
     # this is the shit that handles the logic and instructs the painter what parts it should draw
     def update_loop(self):
@@ -735,7 +727,7 @@ def imgui_thread(overlay):
                 imgui.text("Save config as:")
                 _, Config.Name = imgui.input_text("##Name", Config.Name, 29)
                 if imgui.button("Confirm"):
-                    Config.save_config(Config, export = True)
+                    Config.save_config(Config, True)
                     with zipfile.ZipFile(os.path.join(script_dir, "..", "YourConfigs", Config.Name+".zip"), 'w', zipfile.ZIP_DEFLATED) as zip_ref:
                         for root, _, files in os.walk(os.path.join(script_dir, "..", "Config")):
                             for file in files:
@@ -990,7 +982,7 @@ def imgui_thread(overlay):
             set_clickthrough(hwnd, True)
         impl.render(imgui.get_draw_data())
         glfw.swap_buffers(window)
-        time.sleep(1/60)  # ~60 FPS
+        glfw.wait_events_timeout(0.01)
 
     impl.shutdown()
     glfw.terminate()
@@ -1003,20 +995,9 @@ def main():
     screen_geom = app.primaryScreen().geometry()
     screen_width = screen_geom.width()
     screen_height = screen_geom.height()
-    
-    # load pixmaps after app exists
-    green_skull_pix   = load_pixmap_bytes("Health_Bar_Skull_Green.png", (get_dyn_x(53),get_dyn_y(57)))
-    red_skull_pix     = load_pixmap_bytes("Health_Bar_Skull_Red.png", (get_dyn_x(53),get_dyn_y(57)))
-    ammo_bg_pix       = load_pixmap_bytes("ammogauge-BG-Frame.png", (get_dyn_x(352),get_dyn_y(126)))
-    ammo_pix          = load_pixmap_bytes("ammogauge-pistol-ammunition.png", (get_dyn_x(22),get_dyn_y(22)))
-    healthbar_bg_pix  = load_pixmap_bytes("Health_Bar_BG_Frame.png", (get_dyn_x(315),get_dyn_y(100)))
-    regen_skull_pix   = load_pixmap_bytes("Regen_Meter_Skull.png", (get_dyn_x(60),get_dyn_y(60)))
-    overlay_pix       = load_pixmap_bytes("General_Overlay.png", (get_dyn_x(1920),get_dyn_y(1080)))
-
-    pixmaps = (green_skull_pix, red_skull_pix, ammo_bg_pix, ammo_pix, healthbar_bg_pix, regen_skull_pix, overlay_pix)
 
     # create and show overlay
-    overlay = Overlay(screen_width, screen_height, pixmaps)
+    overlay = Overlay(screen_width, screen_height)
     overlay.show()
 
     # apply native click-through after show()
@@ -1026,7 +1007,7 @@ def main():
     threading.Thread(target=imgui_thread, args=(overlay,), daemon=True).start()
     
     # keyboard hotkeys (global)
-    keyboard.add_hotkey('delete', lambda: (print("Exiting..."+("      "*20)), Config.save_config(Config, False), QtCore.QCoreApplication.quit()))
+    keyboard.add_hotkey('delete', lambda: (print("Exiting..."+("      "*20)), Config.save_config(Config, False), overlay.config_watcher.stop(), QtCore.QCoreApplication.quit()))
     keyboard.add_hotkey('insert', lambda: (setattr(Config, 'show_UI', not Config.show_UI), setattr(overlay, 'regen_extent', 0)))
     sys.exit(app.exec_())
 
