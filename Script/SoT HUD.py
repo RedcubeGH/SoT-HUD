@@ -24,136 +24,142 @@ import subprocess
 
 # Paths
 script_dir  = os.path.dirname(os.path.abspath(__file__))
-config_path = os.path.join(script_dir, "..", "Config", "config.json")
+config_path = os.path.join(script_dir, "..", "Config", "Config.json")
 
-# defaults settings incase config.json is missing or incomplete
-lowhealthvar            = 70
-lowhealthcolour         = "#FF3745"
-healthcolour            = "#43EF88"
-overhealcolour          = "#4CEF7E"
-regenbgcolour           = "#676767"
-numberhealthcolour      = "#FFFFFF"
-numberammocolour        = "#FFFFFF"
-numberregencolour       = "#FFFFFF"
-crosshaircolour         = "#FFFFFF"
-crosshairoutlinecolour  = "#080808"
-font                    = "Times New Roman"
-ammosize                = 25
-hpsize                  = 25
-regensize               = 25
-ammotoggle              = True
-ammodecotoggle          = True
-crosshairtoggle         = False
-staticcrosshair         = False
-healthbartoggle         = True
-healthbardecotoggle     = True
-skulltoggle             = True
-regentoggle             = True
-overlaytoggle           = False
-numberhealthtoggle      = False
-numberammotoggle        = False
-numberregentoggle       = False
-healthanchor            ="sw"
-xoffsethealth           = 0
-yoffsethealth           = 0
-ammoanchor              ="e"
-xoffsetammo             = 0
-yoffsetammo             = 0
-regenanchor             ="e"
-xoffsetregen            = 0
-yoffsetregen            = 0
-healthprefix            = ""
-healthsuffix            = "/100"
-ammoprefix              = ""
-ammosuffix              = "/5"
-regenprefix             = ""
-regensuffix             = ""
+# defaults settings incase Config.json is missing or incomplete
+class Config:
+    lowhealthvar            = 70
+    lowhealthcolour         = "#FF3745"
+    healthcolour            = "#43EF88"
+    overhealcolour          = "#4CEF7E"
+    regenbgcolour           = "#676767"
+    numberhealthcolour      = "#FFFFFF"
+    numberammocolour        = "#FFFFFF"
+    numberregencolour       = "#FFFFFF"
+    crosshaircolour         = "#FFFFFF"
+    crosshairoutlinecolour  = "#080808"
+    font                    = "Times New Roman"
+    ammosize                = 25
+    hpsize                  = 25
+    regensize               = 25
+    ammotoggle              = True
+    ammodecotoggle          = True
+    crosshairtoggle         = False
+    staticcrosshair         = False
+    healthbartoggle         = True
+    healthbardecotoggle     = True
+    skulltoggle             = True
+    regentoggle             = True
+    overlaytoggle           = False
+    numberhealthtoggle      = False
+    numberammotoggle        = False
+    numberregentoggle       = False
+    healthanchor            ="sw"
+    xoffsethealth           = 0
+    yoffsethealth           = 0
+    ammoanchor              ="e"
+    xoffsetammo             = 0
+    yoffsetammo             = 0
+    regenanchor             ="e"
+    xoffsetregen            = 0
+    yoffsetregen            = 0
+    healthprefix            = ""
+    healthsuffix            = "/100"
+    ammoprefix              = ""
+    ammosuffix              = "/5"
+    regenprefix             = ""
+    regensuffix             = ""
 
-# constants
-minregencolour          = [0, 88, 0]
-maxregencolour          = [76, 239, 186]
-minammocolour           = [0, 178, 0]
-maxhpcolour             = [173, 255, 207]
-calibrated_ammo_colour  = (0, 0, 0)
-show_UI                 = False
-hp_slider               = 75.0
-regen_slider            = 50.0
-ammo_slider             = 5
-low_hp_slider           = lowhealthvar
-lowhealthvarchanged     = False
-healthoffset            = xoffsethealth, yoffsethealth
-ammooffset              = xoffsetammo, yoffsetammo
-regenoffset             = xoffsetregen, yoffsetregen
-Name                    = "My Config"
-popup                   = False
-current_font            = 0
+    # constants
+    minregencolour          = [0, 88, 0]
+    maxregencolour          = [76, 239, 186]
+    minammocolour           = [0, 178, 0]
+    maxhpcolour             = [173, 255, 207]
+    calibrated_ammo_colour  = (0, 0, 0)
+    show_UI                 = False
+    hp_slider               = 75.0
+    regen_slider            = 50.0
+    ammo_slider             = 5
+    low_hp_slider           = lowhealthvar
+    lowhealthvarchanged     = False
+    healthoffset            = xoffsethealth, yoffsethealth
+    ammooffset              = xoffsetammo, yoffsetammo
+    regenoffset             = xoffsetregen, yoffsetregen
+    Name                    = "My Config"
+    popup                   = False
+    current_font            = 0
 
-# load config.json
-try:
-    with open(config_path, "r", encoding="utf-8") as f:
-        config_data = json.load(f)
-        for key, value in config_data.items():
-            if key in globals():
-                globals()[key] = value
-except Exception as e:
-    pass
-calibrated_ammo_colour = tuple(calibrated_ammo_colour)
-
-if healthbardecotoggle and not regentoggle:
-    regentoggle     = True
-    overhealcolour  = "#4CEF7E"
-    regenbgcolour   = "#676767"
-
-def save_config():
-    cfg = {
-        "lowhealthvar": lowhealthvar,
-        "lowhealthcolour": lowhealthcolour,
-        "healthcolour": healthcolour,
-        "overhealcolour": overhealcolour,
-        "regenbgcolour": regenbgcolour,
-        "numberhealthcolour": numberhealthcolour,
-        "numberammocolour": numberammocolour,
-        "numberregencolour": numberregencolour,
-        "crosshaircolour": crosshaircolour,
-        "crosshairoutlinecolour": crosshairoutlinecolour,
-        "font": font,
-        "ammosize": ammosize,
-        "hpsize": hpsize,
-        "regensize": regensize,
-        "ammotoggle": ammotoggle,
-        "ammodecotoggle": ammodecotoggle,
-        "crosshairtoggle": crosshairtoggle,
-        "staticcrosshair": staticcrosshair,
-        "healthbartoggle": healthbartoggle,
-        "healthbardecotoggle": healthbardecotoggle,
-        "skulltoggle": skulltoggle,
-        "regentoggle": regentoggle,
-        "overlaytoggle": overlaytoggle,
-        "numberhealthtoggle": numberhealthtoggle,
-        "numberammotoggle": numberammotoggle,
-        "numberregentoggle": numberregentoggle,
-        "healthanchor": healthanchor,
-        "xoffsethealth": xoffsethealth,
-        "yoffsethealth": yoffsethealth,
-        "ammoanchor": ammoanchor,
-        "xoffsetammo": xoffsetammo,
-        "yoffsetammo": yoffsetammo,
-        "regenanchor": regenanchor,
-        "xoffsetregen": xoffsetregen,
-        "yoffsetregen": yoffsetregen,
-        "healthprefix": healthprefix,
-        "healthsuffix": healthsuffix,
-        "ammoprefix": ammoprefix,
-        "ammosuffix": ammosuffix,
-        "regenprefix": regenprefix,
-        "regensuffix": regensuffix,
-        "calibrated_ammo_colour": calibrated_ammo_colour
-    }
+    # load Config.json
     try:
-        with open(config_path, "w", encoding="utf-8") as f:
-            json.dump(cfg, f, indent=4)
-    except Exception:
+        with open(config_path, "r", encoding="utf-8") as f:
+            config_data = json.load(f)
+            for key, value in config_data.items():
+                if key in locals():
+                    locals()[key] = value
+    except Exception as e:
         pass
+    
+    calibrated_ammo_colour = tuple(calibrated_ammo_colour)
+
+    if healthbardecotoggle and not regentoggle:
+        regentoggle     = True
+        overhealcolour  = "#4CEF7E"
+        regenbgcolour   = "#676767"
+
+    def save_config(self, export = False):
+        cfg = {
+            "lowhealthvar":             self.lowhealthvar,
+            "lowhealthcolour":          self.lowhealthcolour,
+            "healthcolour":             self.healthcolour,
+            "overhealcolour":           self.overhealcolour,
+            "regenbgcolour":            self.regenbgcolour,
+            "numberhealthcolour":       self.numberhealthcolour,
+            "numberammocolour":         self.numberammocolour,
+            "numberregencolour":        self.numberregencolour,
+            "crosshaircolour":          self.crosshaircolour,
+            "crosshairoutlinecolour":   self.crosshairoutlinecolour,
+            "font":                     self.font,
+            "ammosize":                 self.ammosize,
+            "hpsize":                   self.hpsize,
+            "regensize":                self.regensize,
+            "ammotoggle":               self.ammotoggle,
+            "ammodecotoggle":           self.ammodecotoggle,
+            "crosshairtoggle":          self.crosshairtoggle,
+            "staticcrosshair":          self.staticcrosshair,
+            "healthbartoggle":          self.healthbartoggle,
+            "healthbardecotoggle":      self.healthbardecotoggle,
+            "skulltoggle":              self.skulltoggle,
+            "regentoggle":              self.regentoggle,
+            "overlaytoggle":            self.overlaytoggle,
+            "numberhealthtoggle":       self.numberhealthtoggle,
+            "numberammotoggle":         self.numberammotoggle,
+            "numberregentoggle":        self.numberregentoggle,
+            "healthanchor":             self.healthanchor,
+            "xoffsethealth":            self.xoffsethealth,
+            "yoffsethealth":            self.yoffsethealth,
+            "ammoanchor":               self.ammoanchor,
+            "xoffsetammo":              self.xoffsetammo,
+            "yoffsetammo":              self.yoffsetammo,
+            "regenanchor":              self.regenanchor,
+            "xoffsetregen":             self.xoffsetregen,
+            "yoffsetregen":             self.yoffsetregen,
+            "healthprefix":             self.healthprefix,
+            "healthsuffix":             self.healthsuffix,
+            "ammoprefix":               self.ammoprefix,
+            "ammosuffix":               self.ammosuffix,
+            "regenprefix":              self.regenprefix,
+            "regensuffix":              self.regensuffix,
+            "calibrated_ammo_colour":   self.calibrated_ammo_colour
+        }
+        try:
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump(cfg, f, indent=4)
+        except Exception:
+            pass
+        
+    def load_config(self, path):
+        with zipfile.ZipFile(path, 'r') as zip_ref:
+            zip_ref.extractall(os.path.join(script_dir, "..", "Config"))
 
 def hex_to_rgb_f(hex_color):
     hex_color = hex_color.lstrip("#")
@@ -336,13 +342,12 @@ class Overlay(QtWidgets.QWidget):
         # internal state
         self.fonts = QtGui.QFontDatabase().families()
         self.screen_img = None
-        self.calibrated_ammo_colour = calibrated_ammo_colour
         self.ammo_states = [False]*6
         self.numberammo_text = ""
         self.health_num_text = ""
         self.show_overlay = False
         self.regen_extent = 0
-        self.regen_text = f"{regenprefix}0{regensuffix}"
+        self.regen_text = f"{Config.regenprefix}0{Config.regensuffix}"
         self.show_health = False
         self.show_regen = False
         self.show_skull_red = False
@@ -377,8 +382,8 @@ class Overlay(QtWidgets.QWidget):
             with open(config_path, "r", encoding="utf-8") as f:
                 config_data = json.load(f)
                 for key, value in config_data.items():
-                    if key in globals():
-                        globals()[key] = value
+                    if hasattr(Config, key):
+                        setattr(Config, key, value)
         except Exception:
             pass
         green_skull_pix   = load_pixmap_bytes("Health_Bar_Skull_Green.png", (get_dyn_x(53),get_dyn_y(57)))
@@ -400,14 +405,10 @@ class Overlay(QtWidgets.QWidget):
         ) = pixmaps
         self.update()
 
-    def load_config(self, path):
-        with zipfile.ZipFile(path, 'r') as zip_ref:
-            zip_ref.extractall(os.path.join(script_dir, "..", "Config"))
-
     # this is the shit that handles the logic and instructs the painter what parts it should draw
     def update_loop(self):
         # calibration stage
-        if self.calibrated_ammo_colour == (0,0,0):
+        if Config.calibrated_ammo_colour == (0,0,0):
             self.calibration_label.setText("Pull out a gun with full ammo to calibrate ammo colour")
             self.calibration_label.move((self.screen_width - self.calibration_label.width())//2, self.screen_height - 140)
             self.calibration_label.show()
@@ -420,69 +421,67 @@ class Overlay(QtWidgets.QWidget):
                 px = screen_img.getpixel((get_dyn_pos_right(1772), get_dyn_y(980)))
                 cond = (px == screen_img.getpixel((get_dyn_pos_right(1746), get_dyn_y(980))) == screen_img.getpixel((get_dyn_pos_right(1720), get_dyn_y(980))) == screen_img.getpixel((get_dyn_pos_right(1694), get_dyn_y(980))) == screen_img.getpixel((get_dyn_pos_right(1668), get_dyn_y(980)))) and (px[1] >= 178)
                 if cond:
-                    self.calibrated_ammo_colour = px
-                    global calibrated_ammo_colour
-                    calibrated_ammo_colour = tuple(px)
-                    save_config()
+                    Config.calibrated_ammo_colour = tuple(px)
                     self.calibration_label.hide()
+                    Config.save_config(Config, False)
                 else:
                     # keep trying
                     pass
             except Exception as e:
-                print(f" Game not found. Couldn't calibrate ammo colour: {e}"+(" "*20), end="\r", flush=True)
+                print(f"Couldn't calibrate ammo colour: {e}"+(" "*20), end="\r", flush=True)
             return
 
         try:
             # only do shit when game running and focused
             foreground = win32gui.GetForegroundWindow()
             hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
-            if hwnd and hwnd == foreground and not show_UI:
+            if hwnd and hwnd == foreground and not Config.show_UI:
                 self.screen_img = capture_client(hwnd)
                 self.show_overlay = True
 
                 # Ammo detection
-                if ammotoggle or crosshairtoggle or numberammotoggle:
+                if Config.ammotoggle or Config.crosshairtoggle or Config.numberammotoggle:
                     for i in range(6):
                         px = self.screen_img.getpixel((get_dyn_pos_right(1642) + get_dyn_x(26*i), get_dyn_y(980)))
                         if self.screen_height == 1440:
                             px = self.screen_img.getpixel((get_dyn_pos_right(1642) + 33*i, get_dyn_y(980)))
-                        if px == tuple(self.calibrated_ammo_colour):
+                        if px == tuple(Config.calibrated_ammo_colour):
                             self.ammo_states[i] = True
                         else:
                             self.ammo_states[i] = False
-                    if numberammotoggle:
+                    if Config.numberammotoggle:
                         for i in range(6):
                             if self.ammo_states[i]:
                                 ammocount = 6 - i
-                                self.numberammo_text = f"{ammoprefix}{ammocount}{ammosuffix}"
+                                self.numberammo_text = f"{Config.ammoprefix}{ammocount}{Config.ammosuffix}"
                                 break
 
                 # Health/regen detection
                 pixel_colour = self.screen_img.getpixel((get_dyn_x(169), get_dyn_y(977))) #supposed to be #000000
                 control_colour = self.screen_img.getpixel((get_dyn_x(176), get_dyn_y(977))) #supposed to be colour of healthbar
-                if max(pixel_colour[:3]) <= 3 >= max(self.screen_img.getpixel((get_dyn_x(141), get_dyn_y(955)))[:3]) != control_colour and control_colour[1] >= 55 and not show_UI:
+                if max(pixel_colour[:3]) <= 3 >= max(self.screen_img.getpixel((get_dyn_x(141), get_dyn_y(955)))[:3]) != control_colour and control_colour[1] >= 55 and not Config.show_UI:
                     # show hud pieces when healthbar is there
                     self.show_health = True
                     self.show_regen = True
                     regen_control_colour = self.screen_img.getpixel((get_dyn_x(141), get_dyn_y(958)))
-                    if (regen_control_colour[0] <= maxregencolour[0] and
-                        minregencolour[1] <= regen_control_colour[1] <= maxregencolour[1] and
-                        regen_control_colour[2] <= maxregencolour[2]):
+                    if (regen_control_colour[0] <= Config.maxregencolour[0] and
+                        Config.minregencolour[1] <= regen_control_colour[1] <= Config.maxregencolour[1] and
+                        regen_control_colour[2] <= Config.maxregencolour[2]):
                         for i in range(200):
                             theta = (2 * math.pi / 200) * -(i+50)
                             x = get_dyn_x(140 + 23 * math.cos(theta))
                             y = get_dyn_y(982 + 23 * math.sin(theta))
                             px = self.screen_img.getpixel((x, y))
-                            if (px[0] <= maxregencolour[0] and
-                                minregencolour[1] <= px[1] <= maxregencolour[1] and
-                                px[2] <= maxregencolour[2]):
-                                if regentoggle:
+                            if (px[0] <= Config.maxregencolour[0] and
+                                Config.minregencolour[1] <= px[1] <= Config.maxregencolour[1] and
+                                px[2] <= Config.maxregencolour[2]):
+                                if Config.regentoggle:
                                     overhealhp = 360-((i)*1.8)
                                     self.regen_extent = int(overhealhp)
-                                self.regen_text = f"{regenprefix}{200-i}{regensuffix}"
+                                self.regen_text = f"{Config.regenprefix}{200-i}{Config.regensuffix}"
                                 if i >= 198:
                                     self.regen_extent = 0
-                                    self.regen_text = f"{regenprefix}0{regensuffix}"
+                                    self.regen_text = f"{Config.regenprefix}0{Config.regensuffix}"
                                 break
 
                     for hp in range(100):
@@ -491,26 +490,26 @@ class Overlay(QtWidgets.QWidget):
                             self.current_hp = 100-hp
                             break
 
-                    if skulltoggle:
-                        self.show_skull_red = (self.current_hp <= lowhealthvar)
+                    if Config.skulltoggle:
+                        self.show_skull_red = (self.current_hp <= Config.lowhealthvar)
                         self.show_skull_green = not self.show_skull_red
 
-                    if numberhealthtoggle:
-                        self.health_num_text = f"{healthprefix}{self.current_hp}{healthsuffix}"
+                    if Config.numberhealthtoggle:
+                        self.health_num_text = f"{Config.healthprefix}{self.current_hp}{Config.healthsuffix}"
 
                 else:
                     # hide hud pieces if healthbar is not there
                     self.show_health = False
                     self.show_regen = False
                     self.health_num_text = ""
-                    self.regen_text = f"{regenprefix}0{regensuffix}"
+                    self.regen_text = f"{Config.regenprefix}0{Config.regensuffix}"
                     self.show_skull_red = False
                     self.show_skull_green = False
                     self.current_hp = 0
                     self.regen_extent = 0
 
                 self.update()
-            elif not show_UI:
+            elif not Config.show_UI:
                 # hide hud when game not focused or not running
                 self.screen_img = None
                 self.ammo_states = [False]*6
@@ -519,7 +518,7 @@ class Overlay(QtWidgets.QWidget):
                 self.show_health = False
                 self.show_regen = False
                 self.health_num_text = ""
-                self.regen_text = f"{regenprefix}0{regensuffix}"
+                self.regen_text = f"{Config.regenprefix}0{Config.regensuffix}"
                 self.show_skull_red = False
                 self.show_skull_green = False
                 self.current_hp = 0
@@ -536,17 +535,17 @@ class Overlay(QtWidgets.QWidget):
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         
         # overlay image
-        if self.show_overlay and overlaytoggle or show_UI and overlaytoggle:
+        if self.show_overlay and Config.overlaytoggle or Config.show_UI and Config.overlaytoggle:
             painter.drawPixmap((self.screen_width - self.overlay_pix.width()) // 2,
                                (self.screen_height - self.overlay_pix.height()) // 2,
                                self.overlay_pix)
         
         #ammo decoration
-        if ammodecotoggle and any(self.ammo_states) or show_UI and ammodecotoggle:
+        if Config.ammodecotoggle and any(self.ammo_states) or Config.show_UI and Config.ammodecotoggle:
             painter.drawPixmap(get_dyn_pos_right(1546), get_dyn_y(919), self.ammo_bg_pix)
         
         # ammo image
-        if ammotoggle and any(self.ammo_states) or show_UI and ammotoggle:
+        if Config.ammotoggle and any(self.ammo_states) or Config.show_UI and Config.ammotoggle:
             for i in range(6):
                 x = get_dyn_pos_right(1642) + get_dyn_x(26*i)
                 y = get_dyn_y(980)
@@ -560,28 +559,28 @@ class Overlay(QtWidgets.QWidget):
                     painter.drawPixmap(x - self.ammo_pix.width()//2, y - self.ammo_pix.height()//2, self.ammo_pix)
         
         # crosshair
-        if crosshairtoggle and (any(self.ammo_states) or staticcrosshair) or show_UI and crosshairtoggle:
-            painter.setBrush(QtGui.QColor(crosshaircolour))
-            painter.setPen(QtGui.QColor(crosshairoutlinecolour))
+        if Config.crosshairtoggle and (any(self.ammo_states) or Config.staticcrosshair) or Config.show_UI and Config.crosshairtoggle:
+            painter.setBrush(QtGui.QColor(Config.crosshaircolour))
+            painter.setPen(QtGui.QColor(Config.crosshairoutlinecolour))
             diameter = 4
             painter.drawEllipse(QtCore.QRectF(self.screen_width/2 - diameter/2, self.screen_height/2 - diameter/2, diameter, diameter))
             
         # healthbar polygon
-        if healthbartoggle and getattr(self, "current_hp", None) is not None and self.show_health or show_UI and healthbartoggle:
+        if Config.healthbartoggle and getattr(self, "current_hp", None) is not None and self.show_health or Config.show_UI and Config.healthbartoggle:
             hp = self.current_hp
             br_x = get_dyn_x(396 - (((396-192)/100)*(100-hp)))
             tr_x = get_dyn_x(380 - (((380-176)/100)*(100-hp)))
             pts = [QtCore.QPointF(get_dyn_x(165),get_dyn_y(973)), QtCore.QPointF(get_dyn_x(181),get_dyn_y(990)), QtCore.QPointF(br_x, get_dyn_y(990)), QtCore.QPointF(tr_x, get_dyn_y(973))]
             poly = QtGui.QPolygonF(pts)
-            color = lowhealthcolour if self.current_hp <= lowhealthvar else healthcolour
+            color = Config.lowhealthcolour if self.current_hp <= Config.lowhealthvar else Config.healthcolour
             painter.setBrush(QtGui.QColor(color))
             painter.setPen(QtCore.Qt.NoPen)
             painter.drawPolygon(poly)
         
         # low health line
-        if healthbartoggle and lowhealthvarchanged and show_UI:
-            br_x = get_dyn_x(396 - (((396-192)/100)*(100-lowhealthvar)))
-            tr_x = get_dyn_x(380 - (((380-176)/100)*(100-lowhealthvar)))
+        if Config.healthbartoggle and Config.lowhealthvarchanged and Config.show_UI:
+            br_x = get_dyn_x(396 - (((396-192)/100)*(100-Config.lowhealthvar)))
+            tr_x = get_dyn_x(380 - (((380-176)/100)*(100-Config.lowhealthvar)))
             pen = QtGui.QPen(QtCore.Qt.black, 4)
             painter.setPen(pen)
             painter.drawLine(br_x, get_dyn_y(990), tr_x, get_dyn_y(973))
@@ -590,12 +589,12 @@ class Overlay(QtWidgets.QWidget):
             painter.drawLine(br_x, get_dyn_y(990), tr_x, get_dyn_y(973))
 
         # healthbar decoration
-        if healthbardecotoggle and self.healthbar_bg_pix and self.show_health or show_UI and healthbardecotoggle:
+        if Config.healthbardecotoggle and self.healthbar_bg_pix and self.show_health or Config.show_UI and Config.healthbardecotoggle:
             painter.drawPixmap(get_dyn_x(256) - self.healthbar_bg_pix.width()//2, get_dyn_y(982) - self.healthbar_bg_pix.height()//2, self.healthbar_bg_pix)
 
         # regen meter background + arc + skull
-        if regentoggle and self.show_regen or show_UI and regentoggle:
-            painter.setBrush(QtGui.QColor(regenbgcolour))
+        if Config.regentoggle and self.show_regen or Config.show_UI and Config.regentoggle:
+            painter.setBrush(QtGui.QColor(Config.regenbgcolour))
             painter.setPen(QtCore.Qt.NoPen)
             painter.drawEllipse(QtCore.QRectF(get_dyn_x(114), get_dyn_y(954), get_dyn_x(54), get_dyn_y(54)))
             rect = QtCore.QRectF(get_dyn_x(141-27), get_dyn_y(981-27), get_dyn_x(55), get_dyn_y(55))
@@ -603,98 +602,44 @@ class Overlay(QtWidgets.QWidget):
             span_deg = -self.regen_extent
             start16 = int(start_deg * 16)
             span16 = int(span_deg * 16)
-            painter.setBrush(QtGui.QColor(overhealcolour))
+            painter.setBrush(QtGui.QColor(Config.overhealcolour))
             painter.drawPie(rect, start16, span16)
             if self.regen_skull_pix:
                 painter.drawPixmap(get_dyn_x(141) - self.regen_skull_pix.width()//2, get_dyn_y(982) - self.regen_skull_pix.height()//2, self.regen_skull_pix)
 
         # skulls
-        if skulltoggle and self.show_health or show_UI and skulltoggle:
+        if Config.skulltoggle and self.show_health or Config.show_UI and Config.skulltoggle:
             if self.show_skull_green and self.green_skull_pix:
                 painter.drawPixmap(get_dyn_x(140) - self.green_skull_pix.width()//2, get_dyn_y(981) - self.green_skull_pix.height()//2, self.green_skull_pix)
             if self.show_skull_red and self.red_skull_pix:
                 painter.drawPixmap(get_dyn_x(140) - self.red_skull_pix.width()//2, get_dyn_y(981) - self.red_skull_pix.height()//2, self.red_skull_pix)
         
         # number health
-        if numberhealthtoggle and self.health_num_text and self.show_health or show_UI and numberhealthtoggle:
-            painter.setPen(QtGui.QColor(numberhealthcolour))
-            font_q = QtGui.QFont(font, hpsize)
+        if Config.numberhealthtoggle and self.health_num_text and self.show_health or Config.show_UI and Config.numberhealthtoggle:
+            painter.setPen(QtGui.QColor(Config.numberhealthcolour))
+            font_q = QtGui.QFont(Config.font, Config.hpsize)
             painter.setFont(font_q)
-            healthrect = make_rect(get_dyn_x(170), get_dyn_y(973), xoffsethealth, yoffsethealth, healthanchor)
-            painter.drawText(healthrect, ALIGN_MAP[healthanchor], self.health_num_text)
+            healthrect = make_rect(get_dyn_x(170), get_dyn_y(973), Config.xoffsethealth, Config.yoffsethealth, Config.healthanchor)
+            painter.drawText(healthrect, ALIGN_MAP[Config.healthanchor], self.health_num_text)
 
         # number regen
-        if numberregentoggle and self.show_regen or show_UI and numberregentoggle:
-            painter.setPen(QtGui.QColor(numberregencolour))
-            font_q = QtGui.QFont(font, regensize)
+        if Config.numberregentoggle and self.show_regen or Config.show_UI and Config.numberregentoggle:
+            painter.setPen(QtGui.QColor(Config.numberregencolour))
+            font_q = QtGui.QFont(Config.font, Config.regensize)
             painter.setFont(font_q)
-            regenrect = make_rect(get_dyn_x(100), get_dyn_y(980), xoffsetregen, yoffsetregen, regenanchor)
-            painter.drawText(regenrect, ALIGN_MAP[regenanchor], self.regen_text)
+            regenrect = make_rect(get_dyn_x(100), get_dyn_y(980), Config.xoffsetregen, Config.yoffsetregen, Config.regenanchor)
+            painter.drawText(regenrect, ALIGN_MAP[Config.regenanchor], self.regen_text)
             
         # number ammo
-        if numberammotoggle and any(self.ammo_states) or show_UI and numberammotoggle:
-            painter.setPen(QtGui.QColor(numberammocolour))
-            font_q = QtGui.QFont(font, ammosize)
+        if Config.numberammotoggle and any(self.ammo_states) or Config.show_UI and Config.numberammotoggle:
+            painter.setPen(QtGui.QColor(Config.numberammocolour))
+            font_q = QtGui.QFont(Config.font, Config.ammosize)
             painter.setFont(font_q)
-            ammorect = make_rect(get_dyn_pos_right(1620), get_dyn_y(980), xoffsetammo, yoffsetammo, ammoanchor)
-            painter.drawText(ammorect, ALIGN_MAP[ammoanchor], self.numberammo_text)
+            ammorect = make_rect(get_dyn_pos_right(1620), get_dyn_y(980), Config.xoffsetammo, Config.yoffsetammo, Config.ammoanchor)
+            painter.drawText(ammorect, ALIGN_MAP[Config.ammoanchor], self.numberammo_text)
         painter.end()
 
 def imgui_thread(overlay):
-    global lowhealthvar
-    global lowhealthcolour
-    global healthcolour
-    global overhealcolour
-    global regenbgcolour
-    global numberhealthcolour
-    global numberammocolour
-    global numberregencolour
-    global crosshaircolour
-    global crosshairoutlinecolour
-    global font
-    global ammosize
-    global hpsize
-    global regensize
-    global ammotoggle
-    global ammodecotoggle
-    global crosshairtoggle
-    global healthbartoggle
-    global healthbardecotoggle
-    global skulltoggle
-    global regentoggle
-    global overlaytoggle
-    global numberhealthtoggle
-    global numberammotoggle
-    global numberregentoggle
-    global healthanchor
-    global xoffsethealth
-    global yoffsethealth
-    global healthoffset
-    global ammoanchor
-    global xoffsetammo
-    global yoffsetammo
-    global ammooffset
-    global regenanchor
-    global xoffsetregen
-    global yoffsetregen
-    global regenoffset
-    global healthprefix
-    global healthsuffix
-    global ammoprefix
-    global ammosuffix
-    global regenprefix
-    global regensuffix
-    global hp_slider
-    global regen_slider
-    global ammo_slider
-    global low_hp_slider
-    global lowhealthvarchanged
-    global current_font
-    global Name
-    global popup
-    global staticcrosshair
-    global show_UI
-    
     anchor_grid = [
         ["nw", "n", "ne"],
         ["w", "x", "e"],
@@ -764,7 +709,7 @@ def imgui_thread(overlay):
         glClear(GL_COLOR_BUFFER_BIT)
         impl.process_inputs()
         imgui.new_frame()
-        if show_UI:
+        if Config.show_UI:
             # All the healthbar customization options
             imgui.begin("SoT HUD config", flags=imgui.WINDOW_ALWAYS_AUTO_RESIZE |
                                             imgui.WINDOW_NO_SCROLLBAR|
@@ -774,71 +719,24 @@ def imgui_thread(overlay):
                 if imgui.begin_menu('File'):
                     changed, _ = imgui.menu_item('Export config', None, False, True)
                     if changed:
-                        popup = True
+                        Config.popup = True
                     with imgui.begin_menu('Open Config', True) as open_recent_menu:
                         if open_recent_menu.opened:
                             for file in os.listdir(os.path.join(script_dir, "..", "YourConfigs")):
                                 changed, _ = imgui.menu_item(file, None, False, True)
                                 if changed:
-                                    overlay.load_config(os.path.join(script_dir, "..", "YourConfigs", file))
+                                    Config.load_config(Config, os.path.join(script_dir, "..", "YourConfigs", file))
                     imgui.end_menu()
                 imgui.end_menu_bar()
-            if popup:
+            if Config.popup:
                 imgui.open_popup("select-popup")
-                popup = False
+                Config.popup = False
             if imgui.begin_popup("select-popup"):
                 imgui.text("Save config as:")
-                _, Name = imgui.input_text("##Name", Name, 29)
+                _, Config.Name = imgui.input_text("##Name", Config.Name, 29)
                 if imgui.button("Confirm"):
-                    cfg = {
-                        "lowhealthvar": lowhealthvar,
-                        "lowhealthcolour": lowhealthcolour,
-                        "healthcolour": healthcolour,
-                        "overhealcolour": overhealcolour,
-                        "regenbgcolour": regenbgcolour,
-                        "numberhealthcolour": numberhealthcolour,
-                        "numberammocolour": numberammocolour,
-                        "numberregencolour": numberregencolour,
-                        "crosshaircolour": crosshaircolour,
-                        "crosshairoutlinecolour": crosshairoutlinecolour,
-                        "font": font,
-                        "ammosize": ammosize,
-                        "hpsize": hpsize,
-                        "regensize": regensize,
-                        "ammotoggle": ammotoggle,
-                        "ammodecotoggle": ammodecotoggle,
-                        "crosshairtoggle": crosshairtoggle,
-                        "staticcrosshair": staticcrosshair,
-                        "healthbartoggle": healthbartoggle,
-                        "healthbardecotoggle": healthbardecotoggle,
-                        "skulltoggle": skulltoggle,
-                        "regentoggle": regentoggle,
-                        "overlaytoggle": overlaytoggle,
-                        "numberhealthtoggle": numberhealthtoggle,
-                        "numberammotoggle": numberammotoggle,
-                        "numberregentoggle": numberregentoggle,
-                        "healthanchor": healthanchor,
-                        "xoffsethealth": xoffsethealth,
-                        "yoffsethealth": yoffsethealth,
-                        "ammoanchor": ammoanchor,
-                        "xoffsetammo": xoffsetammo,
-                        "yoffsetammo": yoffsetammo,
-                        "regenanchor": regenanchor,
-                        "xoffsetregen": xoffsetregen,
-                        "yoffsetregen": yoffsetregen,
-                        "healthprefix": healthprefix,
-                        "healthsuffix": healthsuffix,
-                        "ammoprefix": ammoprefix,
-                        "ammosuffix": ammosuffix,
-                        "regenprefix": regenprefix,
-                        "regensuffix": regensuffix
-                    }
-                    try:
-                        with open(config_path, "w", encoding="utf-8") as f:
-                            json.dump(cfg, f, indent=4)
-                    except Exception:
-                        pass
-                    with zipfile.ZipFile(os.path.join(script_dir, "..", "YourConfigs", Name+".zip"), 'w', zipfile.ZIP_DEFLATED) as zip_ref:
+                    Config.save_config(Config, export = True)
+                    with zipfile.ZipFile(os.path.join(script_dir, "..", "YourConfigs", Config.Name+".zip"), 'w', zipfile.ZIP_DEFLATED) as zip_ref:
                         for root, _, files in os.walk(os.path.join(script_dir, "..", "Config")):
                             for file in files:
                                 file_path = os.path.join(root, file)
@@ -848,24 +746,24 @@ def imgui_thread(overlay):
                 imgui.end_popup()    
             imgui.begin_tab_bar("MainTabBar")
             if imgui.begin_tab_item("Healthbar")[0]:
-                changed, healthbartoggle = imgui.checkbox("Healthbar", healthbartoggle)
-                if healthbartoggle:
-                    health_rgb = hex_to_rgb_f(healthcolour)
+                changed, Config.healthbartoggle = imgui.checkbox("Healthbar", Config.healthbartoggle)
+                if Config.healthbartoggle:
+                    health_rgb = hex_to_rgb_f(Config.healthcolour)
                     changed, health_rgb = imgui.color_edit3("Health colour", *health_rgb)
                     if changed:
-                        healthcolour = rgb_f_to_hex(health_rgb)
-                    changed, low_hp_slider = imgui.slider_float("Critical health point", low_hp_slider, 0, 100, "%.0f")
-                    lowhealthvar = int(low_hp_slider)
+                        Config.healthcolour = rgb_f_to_hex(health_rgb)
+                    changed, Config.low_hp_slider = imgui.slider_float("Critical health point", Config.low_hp_slider, 0, 100, "%.0f")
+                    Config.lowhealthvar = int(Config.low_hp_slider)
                     if imgui.is_item_hovered() or imgui.is_item_active():
-                        lowhealthvarchanged = True
+                        Config.lowhealthvarchanged = True
                     else:
-                        lowhealthvarchanged = False
-                    lowhealth_rgb = hex_to_rgb_f(lowhealthcolour)
+                        Config.lowhealthvarchanged = False
+                    lowhealth_rgb = hex_to_rgb_f(Config.lowhealthcolour)
                     changed, lowhealth_rgb = imgui.color_edit3("Low health colour", *lowhealth_rgb)
                     if changed:
-                        lowhealthcolour = rgb_f_to_hex(lowhealth_rgb)
-                changed, healthbardecotoggle = imgui.checkbox("Healthbar decorations", healthbardecotoggle)
-                if healthbardecotoggle:
+                        Config.lowhealthcolour = rgb_f_to_hex(lowhealth_rgb)
+                changed, Config.healthbardecotoggle = imgui.checkbox("Healthbar decorations", Config.healthbardecotoggle)
+                if Config.healthbardecotoggle:
                     imgui.same_line()
                     if imgui.button("Open in Explorer"):
                         try:
@@ -873,27 +771,27 @@ def imgui_thread(overlay):
                             subprocess.run(["explorer", "/select,", file_to_select])
                         except Exception as e:
                             os.startfile(os.path.join(script_dir, "..", "Config"))
-                        show_UI = False
-                changed, numberhealthtoggle = imgui.checkbox("Health number", numberhealthtoggle)
-                if numberhealthtoggle:
-                    changed, hpsize = imgui.drag_int("Font Size", hpsize, 0.5, 1, 128)
-                    changed, healthoffset = imgui.drag_int2("Position", xoffsethealth, yoffsethealth, 1, -screen_width, screen_width)
-                    xoffsethealth, yoffsethealth = healthoffset
-                    numberhealth_rgb = hex_to_rgb_f(numberhealthcolour)
+                        Config.show_UI = False
+                changed, Config.numberhealthtoggle = imgui.checkbox("Health number", Config.numberhealthtoggle)
+                if Config.numberhealthtoggle:
+                    changed, Config.hpsize = imgui.drag_int("Font Size", Config.hpsize, 0.5, 1, 128)
+                    changed, healthoffset = imgui.drag_int2("Position", Config.xoffsethealth, Config.yoffsethealth, 1, -screen_width, screen_width)
+                    Config.xoffsethealth, Config.yoffsethealth = healthoffset
+                    numberhealth_rgb = hex_to_rgb_f(Config.numberhealthcolour)
                     changed, numberhealth_rgb = imgui.color_edit3("", *numberhealth_rgb)
                     if changed:
-                        numberhealthcolour = rgb_f_to_hex(numberhealth_rgb)
+                        Config.numberhealthcolour = rgb_f_to_hex(numberhealth_rgb)
                     for row_idx, row in enumerate(anchor_grid):
                         for col_idx, anchor in enumerate(row):
                             # Highlight the currently selected anchor
-                            if anchor == healthanchor:
+                            if anchor == Config.healthanchor:
                                 imgui.push_style_color(imgui.COLOR_BUTTON, 0.3, 0.6, 0.9, 1.0)
                             else:
                                 imgui.push_style_color(imgui.COLOR_BUTTON, 0.4, 0.4, 0.4, 1.0)
                             
                             # Draw the button
                             if imgui.button(anchor, width=25, height=25):
-                                healthanchor = anchor  # update selected anchor
+                                Config.healthanchor = anchor  # update selected anchor
 
                             imgui.pop_style_color()
                             if col_idx < len(row) - 1:
@@ -901,32 +799,32 @@ def imgui_thread(overlay):
                     imgui.columns(3, "health_columns", False)  # False disables borders
                     imgui.set_column_width(0, 90)
                     imgui.push_item_width(80)
-                    changed, healthprefix = imgui.input_text(" ", healthprefix, 10)
+                    changed, Config.healthprefix = imgui.input_text(" ", Config.healthprefix, 10)
                     imgui.next_column()
                     imgui.set_column_width(1, 30)
-                    imgui.text(f"{int(hp_slider)}")
+                    imgui.text(f"{int(Config.hp_slider)}")
                     imgui.next_column()
                     imgui.set_column_width(2, 136)
-                    changed, healthsuffix = imgui.input_text("  ", healthsuffix, 11)
+                    changed, Config.healthsuffix = imgui.input_text("  ", Config.healthsuffix, 11)
                     imgui.pop_item_width()
                     imgui.next_column()
                     imgui.columns(1)
-                changed, hp_slider = imgui.slider_float("Health testing slider", hp_slider, 0, 100, "%.0f")
+                changed, Config.hp_slider = imgui.slider_float("Health testing slider", Config.hp_slider, 0, 100, "%.0f")
                 imgui.end_tab_item()
                 
             if imgui.begin_tab_item("Overheal")[0]:
-                changed, regentoggle = imgui.checkbox("Regen meter", regentoggle)
-                if regentoggle:
-                    overheal_rgb = hex_to_rgb_f(overhealcolour)
+                changed, Config.regentoggle = imgui.checkbox("Regen meter", Config.regentoggle)
+                if Config.regentoggle:
+                    overheal_rgb = hex_to_rgb_f(Config.overhealcolour)
                     changed, overheal_rgb = imgui.color_edit3("Overheal colour", *overheal_rgb)
                     if changed:
-                        overhealcolour = rgb_f_to_hex(overheal_rgb)
-                    regenbg_rgb = hex_to_rgb_f(regenbgcolour)
+                        Config.overhealcolour = rgb_f_to_hex(overheal_rgb)
+                    regenbg_rgb = hex_to_rgb_f(Config.regenbgcolour)
                     changed, regenbg_rgb = imgui.color_edit3("Background colour", *regenbg_rgb)
                     if changed:
-                        regenbgcolour = rgb_f_to_hex(regenbg_rgb)
-                changed, skulltoggle = imgui.checkbox("Healthbar skull", skulltoggle)
-                if skulltoggle:
+                        Config.regenbgcolour = rgb_f_to_hex(regenbg_rgb)
+                changed, Config.skulltoggle = imgui.checkbox("Healthbar skull", Config.skulltoggle)
+                if Config.skulltoggle:
                     imgui.same_line()
                     if imgui.button("Open in Explorer"):
                         try:
@@ -934,27 +832,27 @@ def imgui_thread(overlay):
                             subprocess.run(["explorer", "/select,", file_to_select])
                         except Exception as e:
                             os.startfile(os.path.join(script_dir, "..", "Config"))
-                        show_UI = False
-                changed, numberregentoggle = imgui.checkbox("Overheal number", numberregentoggle)
-                if numberregentoggle:
-                    changed, regensize = imgui.drag_int("Font Size", regensize, 0.5, 1, 128)
-                    changed, regenoffset = imgui.drag_int2("Position", xoffsetregen, yoffsetregen, 1, -screen_width, screen_width)
-                    xoffsetregen, yoffsetregen = regenoffset
-                    numberregen_rgb = hex_to_rgb_f(numberregencolour)
+                        Config.show_UI = False
+                changed, Config.numberregentoggle = imgui.checkbox("Overheal number", Config.numberregentoggle)
+                if Config.numberregentoggle:
+                    changed, Config.regensize = imgui.drag_int("Font Size", Config.regensize, 0.5, 1, 128)
+                    changed, regenoffset = imgui.drag_int2("Position", Config.xoffsetregen, Config.yoffsetregen, 1, -screen_width, screen_width)
+                    Config.xoffsetregen, Config.yoffsetregen = regenoffset
+                    numberregen_rgb = hex_to_rgb_f(Config.numberregencolour)
                     changed, numberregen_rgb = imgui.color_edit3("", *numberregen_rgb)
                     if changed:
-                        numberregencolour = rgb_f_to_hex(numberregen_rgb)
+                        Config.numberregencolour = rgb_f_to_hex(numberregen_rgb)
                     for row_idx, row in enumerate(anchor_grid):
                         for col_idx, anchor in enumerate(row):
                             # Highlight the currently selected anchor
-                            if anchor == regenanchor:
+                            if anchor == Config.regenanchor:
                                 imgui.push_style_color(imgui.COLOR_BUTTON, 0.3, 0.6, 0.9, 1.0)
                             else:
                                 imgui.push_style_color(imgui.COLOR_BUTTON, 0.4, 0.4, 0.4, 1.0)
                             
                             # Draw the button
                             if imgui.button(anchor, width=25, height=25):
-                                regenanchor = anchor  # update selected anchor
+                                Config.regenanchor = anchor  # update selected anchor
 
                             imgui.pop_style_color()
                             if col_idx < len(row) - 1:
@@ -962,21 +860,21 @@ def imgui_thread(overlay):
                     imgui.columns(3, "regen_columns", False)  # False disables borders
                     imgui.set_column_width(0, 90)
                     imgui.push_item_width(80)
-                    changed, regenprefix = imgui.input_text(" ", regenprefix, 10)
+                    changed, Config.regenprefix = imgui.input_text(" ", Config.regenprefix, 10)
                     imgui.next_column()
                     imgui.set_column_width(1, 30)
-                    imgui.text(f"{int(regen_slider)}")
+                    imgui.text(f"{int(Config.regen_slider)}")
                     imgui.next_column()
                     imgui.set_column_width(2, 136)
-                    changed, regensuffix = imgui.input_text("  ", regensuffix, 11)
+                    changed, Config.regensuffix = imgui.input_text("  ", Config.regensuffix, 11)
                     imgui.pop_item_width()
                     imgui.next_column()
                     imgui.columns(1)
-                changed, regen_slider = imgui.slider_float("Regen testing slider", regen_slider, 0, 200, "%.0f")
+                changed, Config.regen_slider = imgui.slider_float("Regen testing slider", Config.regen_slider, 0, 200, "%.0f")
                 imgui.end_tab_item()
             if imgui.begin_tab_item("Ammo")[0]:
-                changed, ammotoggle = imgui.checkbox("Ammo", ammotoggle)
-                if ammotoggle:
+                changed, Config.ammotoggle = imgui.checkbox("Ammo", Config.ammotoggle)
+                if Config.ammotoggle:
                     imgui.same_line()
                     if imgui.button("Open in Explorer"):
                         try:
@@ -984,9 +882,9 @@ def imgui_thread(overlay):
                             subprocess.run(["explorer", "/select,", file_to_select])
                         except Exception as e:
                             os.startfile(os.path.join(script_dir, "..", "Config"))
-                        show_UI = False
-                changed, ammodecotoggle = imgui.checkbox("Ammo decorations", ammodecotoggle)
-                if ammodecotoggle:
+                        Config.show_UI = False
+                changed, Config.ammodecotoggle = imgui.checkbox("Ammo decorations", Config.ammodecotoggle)
+                if Config.ammodecotoggle:
                     imgui.same_line()
                     if imgui.button("Open in Explorer "):
                         try:
@@ -994,27 +892,27 @@ def imgui_thread(overlay):
                             subprocess.run(["explorer", "/select,", file_to_select])
                         except Exception as e:
                             os.startfile(os.path.join(script_dir, "..", "Config"))
-                        show_UI = False
-                changed, numberammotoggle = imgui.checkbox("Ammo number", numberammotoggle)
-                if numberammotoggle:
-                    changed, ammosize = imgui.drag_int("Font Size", ammosize, 0.5, 1, 128)
-                    changed, ammooffset = imgui.drag_int2("Position", xoffsetammo, yoffsetammo, 1, -screen_width, screen_width)
-                    xoffsetammo, yoffsetammo = ammooffset
-                    numberammo_rgb = hex_to_rgb_f(numberammocolour)
+                        Config.show_UI = False
+                changed, Config.numberammotoggle = imgui.checkbox("Ammo number", Config.numberammotoggle)
+                if Config.numberammotoggle:
+                    changed, Config.ammosize = imgui.drag_int("Font Size", Config.ammosize, 0.5, 1, 128)
+                    changed, ammooffset = imgui.drag_int2("Position", Config.xoffsetammo, Config.yoffsetammo, 1, -screen_width, screen_width)
+                    Config.xoffsetammo, Config.yoffsetammo = ammooffset
+                    numberammo_rgb = hex_to_rgb_f(Config.numberammocolour)
                     changed, numberammo_rgb = imgui.color_edit3("", *numberammo_rgb)
                     if changed:
-                        numberammocolour = rgb_f_to_hex(numberammo_rgb)
+                        Config.numberammocolour = rgb_f_to_hex(numberammo_rgb)
                     for row_idx, row in enumerate(anchor_grid):
                         for col_idx, anchor in enumerate(row):
                             # Highlight the currently selected anchor
-                            if anchor == ammoanchor:
+                            if anchor == Config.ammoanchor:
                                 imgui.push_style_color(imgui.COLOR_BUTTON, 0.3, 0.6, 0.9, 1.0)
                             else:
                                 imgui.push_style_color(imgui.COLOR_BUTTON, 0.4, 0.4, 0.4, 1.0)
                             
                             # Draw the button
                             if imgui.button(anchor, width=25, height=25):
-                                ammoanchor = anchor  # update selected anchor
+                                Config.ammoanchor = anchor  # update selected anchor
 
                             imgui.pop_style_color()
                             if col_idx < len(row) - 1:
@@ -1022,32 +920,32 @@ def imgui_thread(overlay):
                     imgui.columns(3, "ammo_columns", False)  # False disables borders
                     imgui.set_column_width(0, 90)
                     imgui.push_item_width(80)
-                    changed, ammoprefix = imgui.input_text(" ", ammoprefix, 10)
+                    changed, Config.ammoprefix = imgui.input_text(" ", Config.ammoprefix, 10)
                     imgui.next_column()
                     imgui.set_column_width(1, 30)
-                    imgui.text(f"{int(ammo_slider)}")
+                    imgui.text(f"{int(Config.ammo_slider)}")
                     imgui.next_column()
                     imgui.set_column_width(2, 136)
-                    changed, ammosuffix = imgui.input_text("  ", ammosuffix, 11)
+                    changed, Config.ammosuffix = imgui.input_text("  ", Config.ammosuffix, 11)
                     imgui.pop_item_width()
                     imgui.next_column()
                     imgui.columns(1)
-                changed, ammo_slider = imgui.slider_int("Ammo testing slider", ammo_slider, 0, 6, "%.0f")
+                changed, Config.ammo_slider = imgui.slider_int("Ammo testing slider", Config.ammo_slider, 0, 6, "%.0f")
                 imgui.end_tab_item()
             if imgui.begin_tab_item("Misc")[0]:
-                changed, crosshairtoggle = imgui.checkbox("Crosshair", crosshairtoggle)
-                if crosshairtoggle:
-                    changed, staticcrosshair = imgui.checkbox("Static crosshair", staticcrosshair)
-                    crosshair_rgb = hex_to_rgb_f(crosshaircolour)
+                changed, Config.crosshairtoggle = imgui.checkbox("Crosshair", Config.crosshairtoggle)
+                if Config.crosshairtoggle:
+                    changed, Config.staticcrosshair = imgui.checkbox("Static crosshair", Config.staticcrosshair)
+                    crosshair_rgb = hex_to_rgb_f(Config.crosshaircolour)
                     changed, crosshair_rgb = imgui.color_edit3("Crosshair colour", *crosshair_rgb)
                     if changed:
-                        crosshaircolour = rgb_f_to_hex(crosshair_rgb)
-                    crosshairoutline_rgb = hex_to_rgb_f(crosshairoutlinecolour)
+                        Config.crosshaircolour = rgb_f_to_hex(crosshair_rgb)
+                    crosshairoutline_rgb = hex_to_rgb_f(Config.crosshairoutlinecolour)
                     changed, crosshairoutline_rgb = imgui.color_edit3("Crosshair outline colour", *crosshairoutline_rgb)
                     if changed:
-                        crosshairoutlinecolour = rgb_f_to_hex(crosshairoutline_rgb)
-                changed, overlaytoggle = imgui.checkbox("General overlay", overlaytoggle)
-                if overlaytoggle:
+                        Config.crosshairoutlinecolour = rgb_f_to_hex(crosshairoutline_rgb)
+                changed, Config.overlaytoggle = imgui.checkbox("General overlay", Config.overlaytoggle)
+                if Config.overlaytoggle:
                     imgui.same_line()
                     if imgui.button("Open in Explorer"):
                         try:
@@ -1055,38 +953,38 @@ def imgui_thread(overlay):
                             subprocess.run(["explorer", "/select,", file_to_select])
                         except Exception as e:
                             os.startfile(os.path.join(script_dir, "..", "Config"))
-                        show_UI = False
+                        Config.show_UI = False
                 try:
-                    current_font = overlay.fonts.index(font)
+                    Config.current_font = overlay.fonts.index(Config.font)
                 except ValueError:
-                    font = "MS Shell Dlg 2" # standard pyqt font if invalid font
-                    current_font = overlay.fonts.index(font)
-                clicked, current_font = imgui.combo(
-                    "Font", current_font, overlay.fonts, 30)
-                font = overlay.fonts[current_font]
+                    Config.font = "MS Shell Dlg 2" # standard pyqt font if invalid font
+                    Config.current_font = overlay.fonts.index(Config.font)
+                clicked, Config.current_font = imgui.combo(
+                    "Font", Config.current_font, overlay.fonts, 30)
+                Config.font = overlay.fonts[Config.current_font]
                 if imgui.button("Recalibrate ammo colour"):
-                    overlay.calibrated_ammo_colour = (0,0,0)
+                    Config.calibrated_ammo_colour = (0,0,0)
                 imgui.end_tab_item()
             imgui.end_tab_bar()
-            overlay.current_hp = hp_slider
-            if hp_slider <= lowhealthvar:
+            overlay.current_hp = Config.hp_slider
+            if Config.hp_slider <= Config.lowhealthvar:
                 overlay.show_skull_red = True
                 overlay.show_skull_green = False
             else:
                 overlay.show_skull_red = False
                 overlay.show_skull_green = True
-            overlay.health_num_text = f"{healthprefix}{int(hp_slider)}{healthsuffix}"
-            overlay.regen_extent = regen_slider * 1.8
-            overlay.regen_text = f"{regenprefix}{int(regen_slider)}{regensuffix}"
+            overlay.health_num_text = f"{Config.healthprefix}{int(Config.hp_slider)}{Config.healthsuffix}"
+            overlay.regen_extent = Config.regen_slider * 1.8
+            overlay.regen_text = f"{Config.regenprefix}{int(Config.regen_slider)}{Config.regensuffix}"
             overlay.ammo_states = [False] * len(overlay.ammo_states)
-            for i in range(5, 5 - ammo_slider, -1):
+            for i in range(5, 5 - Config.ammo_slider, -1):
                 overlay.ammo_states[i] = True
-            overlay.numberammo_text = f"{ammoprefix}{ammo_slider}{ammosuffix}"
+            overlay.numberammo_text = f"{Config.ammoprefix}{Config.ammo_slider}{Config.ammosuffix}"
             imgui.end()
 
         # Render
         imgui.render()
-        if show_UI:
+        if Config.show_UI:
             set_clickthrough(hwnd, False)
         else:
             set_clickthrough(hwnd, True)
@@ -1128,8 +1026,8 @@ def main():
     threading.Thread(target=imgui_thread, args=(overlay,), daemon=True).start()
     
     # keyboard hotkeys (global)
-    keyboard.add_hotkey('delete', lambda: (print("Exiting..."+("      "*20)), save_config(), QtCore.QCoreApplication.quit()))
-    keyboard.add_hotkey('insert', lambda: (globals().__setitem__('show_UI', not globals()['show_UI']), setattr(overlay, 'regen_extent', 0)))
+    keyboard.add_hotkey('delete', lambda: (print("Exiting..."+("      "*20)), Config.save_config(Config, False), QtCore.QCoreApplication.quit()))
+    keyboard.add_hotkey('insert', lambda: (setattr(Config, 'show_UI', not Config.show_UI), setattr(overlay, 'regen_extent', 0)))
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
