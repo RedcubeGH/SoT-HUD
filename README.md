@@ -80,7 +80,7 @@ Configurations can also be exported to `.zip` for easy sharing.
 * Save and load configuration profiles as `.zip` files
 * In-game ImGui configuration and testing interface
 
-![App Screenshot](https://cdn.discordapp.com/attachments/1266159824970846320/1427758195497107607/image.png?ex=68f006f0&is=68eeb570&hm=f074679c36efd645dd31192dc91cfd68957c19a59b5771803c79967294099832&)
+![App Screenshot](https://i.imgur.com/zsgPyPW.png)
 
 ---
 
