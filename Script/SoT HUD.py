@@ -23,6 +23,8 @@ import zipfile
 import subprocess
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+from windows_capture import WindowsCapture, Frame, InternalCaptureControl
+import numpy as np
 
 # Paths
 script_dir  = os.path.dirname(os.path.abspath(__file__))
@@ -30,6 +32,7 @@ config_path = os.path.join(script_dir, "..", "Config", "Config.json")
 
 # defaults settings incase Config.json is missing or incomplete
 class Config:
+    # configurable variables
     lowhealthvar            = 70
     lowhealthcolour         = "#FF3745"
     healthcolour            = "#43EF88"
@@ -73,10 +76,10 @@ class Config:
     regensuffix             = ""
 
     # constants
-    minregencolour          = [0, 88, 0]
-    maxregencolour          = [76, 239, 186]
-    minammocolour           = [0, 178, 0]
-    maxhpcolour             = [173, 255, 207]
+    MINREGENCOLOUR          = [0, 88, 0]
+    MAXREGENCOLOUR          = [76, 239, 186]
+    
+    # Non-config variables for imgui
     calibrated_ammo_colour  = (0, 0, 0)
     show_UI                 = False
     hp_slider               = 75.0
@@ -92,14 +95,16 @@ class Config:
     current_font            = 0
 
     # load Config.json
-    try:
-        with open(config_path, "r", encoding="utf-8") as f:
-            config_data = json.load(f)
-            for key, value in config_data.items():
-                if key in locals():
-                    locals()[key] = value
-    except Exception as e:
-        pass
+    @classmethod
+    def load_from_file(cls, path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            for k, v in data.items():
+                if hasattr(cls, k):
+                    setattr(cls, k, v)
+        except Exception:
+            pass
     
     calibrated_ammo_colour = tuple(calibrated_ammo_colour)
 
@@ -108,50 +113,51 @@ class Config:
         overhealcolour  = "#4CEF7E"
         regenbgcolour   = "#676767"
 
-    def save_config(self, export = False):
+    @classmethod
+    def save_config(cls, export = False):
         cfg = {
-            "lowhealthvar":             self.lowhealthvar,
-            "lowhealthcolour":          self.lowhealthcolour,
-            "healthcolour":             self.healthcolour,
-            "overhealcolour":           self.overhealcolour,
-            "regenbgcolour":            self.regenbgcolour,
-            "numberhealthcolour":       self.numberhealthcolour,
-            "numberammocolour":         self.numberammocolour,
-            "numberregencolour":        self.numberregencolour,
-            "crosshaircolour":          self.crosshaircolour,
-            "crosshairoutlinecolour":   self.crosshairoutlinecolour,
-            "font":                     self.font,
-            "ammosize":                 self.ammosize,
-            "hpsize":                   self.hpsize,
-            "regensize":                self.regensize,
-            "ammotoggle":               self.ammotoggle,
-            "ammodecotoggle":           self.ammodecotoggle,
-            "crosshairtoggle":          self.crosshairtoggle,
-            "staticcrosshair":          self.staticcrosshair,
-            "healthbartoggle":          self.healthbartoggle,
-            "healthbardecotoggle":      self.healthbardecotoggle,
-            "skulltoggle":              self.skulltoggle,
-            "regentoggle":              self.regentoggle,
-            "overlaytoggle":            self.overlaytoggle,
-            "numberhealthtoggle":       self.numberhealthtoggle,
-            "numberammotoggle":         self.numberammotoggle,
-            "numberregentoggle":        self.numberregentoggle,
-            "healthanchor":             self.healthanchor,
-            "xoffsethealth":            self.xoffsethealth,
-            "yoffsethealth":            self.yoffsethealth,
-            "ammoanchor":               self.ammoanchor,
-            "xoffsetammo":              self.xoffsetammo,
-            "yoffsetammo":              self.yoffsetammo,
-            "regenanchor":              self.regenanchor,
-            "xoffsetregen":             self.xoffsetregen,
-            "yoffsetregen":             self.yoffsetregen,
-            "healthprefix":             self.healthprefix,
-            "healthsuffix":             self.healthsuffix,
-            "ammoprefix":               self.ammoprefix,
-            "ammosuffix":               self.ammosuffix,
-            "regenprefix":              self.regenprefix,
-            "regensuffix":              self.regensuffix,
-            "calibrated_ammo_colour":   self.calibrated_ammo_colour
+            "lowhealthvar":             cls.lowhealthvar,
+            "lowhealthcolour":          cls.lowhealthcolour,
+            "healthcolour":             cls.healthcolour,
+            "overhealcolour":           cls.overhealcolour,
+            "regenbgcolour":            cls.regenbgcolour,
+            "numberhealthcolour":       cls.numberhealthcolour,
+            "numberammocolour":         cls.numberammocolour,
+            "numberregencolour":        cls.numberregencolour,
+            "crosshaircolour":          cls.crosshaircolour,
+            "crosshairoutlinecolour":   cls.crosshairoutlinecolour,
+            "font":                     cls.font,
+            "ammosize":                 cls.ammosize,
+            "hpsize":                   cls.hpsize,
+            "regensize":                cls.regensize,
+            "ammotoggle":               cls.ammotoggle,
+            "ammodecotoggle":           cls.ammodecotoggle,
+            "crosshairtoggle":          cls.crosshairtoggle,
+            "staticcrosshair":          cls.staticcrosshair,
+            "healthbartoggle":          cls.healthbartoggle,
+            "healthbardecotoggle":      cls.healthbardecotoggle,
+            "skulltoggle":              cls.skulltoggle,
+            "regentoggle":              cls.regentoggle,
+            "overlaytoggle":            cls.overlaytoggle,
+            "numberhealthtoggle":       cls.numberhealthtoggle,
+            "numberammotoggle":         cls.numberammotoggle,
+            "numberregentoggle":        cls.numberregentoggle,
+            "healthanchor":             cls.healthanchor,
+            "xoffsethealth":            cls.xoffsethealth,
+            "yoffsethealth":            cls.yoffsethealth,
+            "ammoanchor":               cls.ammoanchor,
+            "xoffsetammo":              cls.xoffsetammo,
+            "yoffsetammo":              cls.yoffsetammo,
+            "regenanchor":              cls.regenanchor,
+            "xoffsetregen":             cls.xoffsetregen,
+            "yoffsetregen":             cls.yoffsetregen,
+            "healthprefix":             cls.healthprefix,
+            "healthsuffix":             cls.healthsuffix,
+            "ammoprefix":               cls.ammoprefix,
+            "ammosuffix":               cls.ammosuffix,
+            "regenprefix":              cls.regenprefix,
+            "regensuffix":              cls.regensuffix,
+            "calibrated_ammo_colour":   cls.calibrated_ammo_colour
         }
         if export:
             cfg.pop("calibrated_ammo_colour", None)
@@ -160,8 +166,9 @@ class Config:
                 json.dump(cfg, f, indent=4)
         except Exception:
             pass
-        
-    def load_config(self, path):
+    
+    @classmethod
+    def load_config(cls, path):
         with zipfile.ZipFile(path, 'r') as zip_ref:
             zip_ref.extractall(os.path.join(script_dir, "..", "Config"))
 
@@ -250,23 +257,40 @@ def make_rect(x, y, xoffset, yoffset, anchor="x"):
     elif anchor == "nw":
         return QtCore.QRect((x + int(xoffset)), (y + int(yoffset)), w, h)
 
+TARGET_WINDOW = "Sea of Thieves"
+latest_frame = None
+frame_ready = False
 # SoT capture
-def capture_client(hwnd):
-    left, top, right, bot = win32gui.GetClientRect(hwnd)
-    w, h = right - left, bot - top
-    hwndDC = win32gui.GetWindowDC(hwnd)
-    mfcDC  = win32ui.CreateDCFromHandle(hwndDC)
-    saveDC = mfcDC.CreateCompatibleDC()
-    saveBitMap = win32ui.CreateBitmap()
-    saveBitMap.CreateCompatibleBitmap(mfcDC, w, h)
-    saveDC.SelectObject(saveBitMap)
-    windll.user32.PrintWindow(hwnd, saveDC.GetSafeHdc(), 3)
-    bmpinfo = saveBitMap.GetInfo()
-    bmpstr = saveBitMap.GetBitmapBits(True)
-    img = Image.frombuffer('RGB', (bmpinfo['bmWidth'], bmpinfo['bmHeight']), bmpstr, 'raw', 'BGRX', 0, 1)
-    # cleanup
-    win32gui.DeleteObject(saveBitMap.GetHandle()); saveDC.DeleteDC(); mfcDC.DeleteDC(); win32gui.ReleaseDC(hwnd, hwndDC)
-    return img
+def start_capture():
+    global capture
+    
+    capture = WindowsCapture(
+        cursor_capture=False,
+        draw_border=False,
+        window_name=TARGET_WINDOW
+    )
+
+    @capture.event
+    def on_frame_arrived(frame: Frame, capture_control: InternalCaptureControl):
+        global latest_frame, frame_ready
+        latest_frame = frame.frame_buffer[:, :, :3]  # BGRA → BGR
+        frame_ready = True
+
+    @capture.event
+    def on_closed():
+        print("Capture stopped")
+
+    capture.start_free_threaded()
+    
+def get_pixel(x, y):
+    global latest_frame, frame_ready
+    if not frame_ready or latest_frame is None:
+        return None
+    try:
+        b, g, r = latest_frame[y, x]
+        return (r, g, b)  # return RGB
+    except:
+        return None
     
 class PixmapManager:
     def __init__(self, base_dir):
@@ -368,20 +392,15 @@ class Overlay(QtWidgets.QWidget):
         try:
             hwnd = int(self.winId())
             exStyle = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
+            exStyle &= ~win32con.WS_EX_APPWINDOW
+            exStyle &= ~win32con.WS_EX_TOOLWINDOW            
             exStyle |= win32con.WS_EX_LAYERED | win32con.WS_EX_TRANSPARENT
             win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, exStyle)
         except Exception as e:
             print("Failed to set native click-through:", e)
             
     def update_config(self):
-        try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                config_data = json.load(f)
-                for key, value in config_data.items():
-                    if hasattr(Config, key):
-                        setattr(Config, key, value)
-        except Exception:
-            pass
+        Config.load_from_file(config_path)
         time.sleep(0.1)
         self.load_all()
         self.update()
@@ -389,7 +408,6 @@ class Overlay(QtWidgets.QWidget):
     def load_all(self):
         pm = PixmapManager(os.path.join(script_dir, "..", "Config"))
         self.green_skull_pix   = pm.load("Health_Bar_Skull_Green.png", (get_dyn_x(53),get_dyn_y(57)))
-        self.green_skull_pix   = pm.load("Health_Bar_Skull_Green.png", (get_dyn_x(53), get_dyn_y(57)))
         self.red_skull_pix     = pm.load("Health_Bar_Skull_Red.png", (get_dyn_x(53), get_dyn_y(57)))
         self.ammo_bg_pix       = pm.load("ammogauge-BG-Frame.png", (get_dyn_x(352), get_dyn_y(126)))
         self.ammo_pix          = pm.load("ammogauge-pistol-ammunition.png", (get_dyn_x(22), get_dyn_y(22)))
@@ -409,13 +427,13 @@ class Overlay(QtWidgets.QWidget):
                 hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
                 if hwnd == 0:
                     raise RuntimeError("Game not found")
-                screen_img = capture_client(hwnd)
-                px = screen_img.getpixel((get_dyn_pos_right(1772), get_dyn_y(980)))
-                cond = (px == screen_img.getpixel((get_dyn_pos_right(1746), get_dyn_y(980))) == screen_img.getpixel((get_dyn_pos_right(1720), get_dyn_y(980))) == screen_img.getpixel((get_dyn_pos_right(1694), get_dyn_y(980))) == screen_img.getpixel((get_dyn_pos_right(1668), get_dyn_y(980)))) and (px[1] >= 178)
+                #screen_img = capture_client(hwnd)
+                px = get_pixel(get_dyn_pos_right(1772), get_dyn_y(980))
+                cond = (px == get_pixel(get_dyn_pos_right(1746), get_dyn_y(980)) == get_pixel(get_dyn_pos_right(1720), get_dyn_y(980)) == get_pixel(get_dyn_pos_right(1694), get_dyn_y(980)) == get_pixel(get_dyn_pos_right(1668), get_dyn_y(980)) and (px[1] >= 178))
                 if cond:
-                    Config.calibrated_ammo_colour = tuple(px)
+                    Config.calibrated_ammo_colour = tuple(int(x) for x in px)
                     self.calibration_label.hide()
-                    Config.save_config(Config, False)
+                    Config.save_config(False)
                 else:
                     # keep trying
                     pass
@@ -428,15 +446,15 @@ class Overlay(QtWidgets.QWidget):
             foreground = win32gui.GetForegroundWindow()
             hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
             if hwnd and hwnd == foreground and not Config.show_UI:
-                self.screen_img = capture_client(hwnd)
+                #self.screen_img = capture_client(hwnd)
                 self.show_overlay = True
 
                 # Ammo detection
                 if Config.ammotoggle or Config.crosshairtoggle or Config.numberammotoggle:
                     for i in range(6):
-                        px = self.screen_img.getpixel((get_dyn_pos_right(1642) + get_dyn_x(26*i), get_dyn_y(980)))
+                        px = get_pixel(get_dyn_pos_right(1642) + get_dyn_x(26*i), get_dyn_y(980))
                         if self.screen_height == 1440:
-                            px = self.screen_img.getpixel((get_dyn_pos_right(1642) + 33*i, get_dyn_y(980)))
+                            px = get_pixel(get_dyn_pos_right(1642) + 33*i, get_dyn_y(980))
                         if px == tuple(Config.calibrated_ammo_colour):
                             self.ammo_states[i] = True
                         else:
@@ -449,24 +467,27 @@ class Overlay(QtWidgets.QWidget):
                                 break
 
                 # Health/regen detection
-                pixel_colour = self.screen_img.getpixel((get_dyn_x(169), get_dyn_y(977))) #supposed to be #000000
-                control_colour = self.screen_img.getpixel((get_dyn_x(176), get_dyn_y(977))) #supposed to be colour of healthbar
-                if max(pixel_colour[:3]) <= 3 >= max(self.screen_img.getpixel((get_dyn_x(141), get_dyn_y(955)))[:3]) != control_colour and control_colour[1] >= 55 and not Config.show_UI:
+                pixel_colour = get_pixel(get_dyn_x(169), get_dyn_y(977)) #supposed to be #000000
+                control_colour = get_pixel(get_dyn_x(176), get_dyn_y(977)) #supposed to be colour of healthbar
+                extra_px = get_pixel(get_dyn_x(141), get_dyn_y(955))
+                # ensure all pixels were read successfully and use explicit comparisons to avoid ambiguous truth-value of arrays
+                if (pixel_colour is not None and control_colour is not None and extra_px is not None and
+                    max(pixel_colour[:3]) <= 3 and extra_px != control_colour and control_colour[1] >= 55 and not Config.show_UI):
                     # show hud pieces when healthbar is there
                     self.show_health = True
                     self.show_regen = True
-                    regen_control_colour = self.screen_img.getpixel((get_dyn_x(141), get_dyn_y(958)))
-                    if (regen_control_colour[0] <= Config.maxregencolour[0] and
-                        Config.minregencolour[1] <= regen_control_colour[1] <= Config.maxregencolour[1] and
-                        regen_control_colour[2] <= Config.maxregencolour[2]):
+                    regen_control_colour = get_pixel(get_dyn_x(141), get_dyn_y(958))
+                    if (regen_control_colour[0] <= Config.MAXREGENCOLOUR[0] and
+                        Config.MINREGENCOLOUR[1] <= regen_control_colour[1] <= Config.MAXREGENCOLOUR[1] and
+                        regen_control_colour[2] <= Config.MAXREGENCOLOUR[2]):
                         for i in range(200):
                             theta = (2 * math.pi / 200) * -(i+50)
                             x = get_dyn_x(140 + 23 * math.cos(theta))
                             y = get_dyn_y(982 + 23 * math.sin(theta))
-                            px = self.screen_img.getpixel((x, y))
-                            if (px[0] <= Config.maxregencolour[0] and
-                                Config.minregencolour[1] <= px[1] <= Config.maxregencolour[1] and
-                                px[2] <= Config.maxregencolour[2]):
+                            px = get_pixel(x, y)
+                            if (px[0] <= Config.MAXREGENCOLOUR[0] and
+                                Config.MINREGENCOLOUR[1] <= px[1] <= Config.MAXREGENCOLOUR[1] and
+                                px[2] <= Config.MAXREGENCOLOUR[2]):
                                 if Config.regentoggle:
                                     overhealhp = 360-((i)*1.8)
                                     self.regen_extent = int(overhealhp)
@@ -477,7 +498,7 @@ class Overlay(QtWidgets.QWidget):
                                 break
 
                     for hp in range(100):
-                        px = self.screen_img.getpixel((get_dyn_x(384 - (2*hp)), get_dyn_y(984)))
+                        px = get_pixel(get_dyn_x(384 - (2*hp)), get_dyn_y(984))
                         if px == control_colour and px[1] >= 55:
                             self.current_hp = 100-hp
                             break
@@ -611,7 +632,7 @@ class Overlay(QtWidgets.QWidget):
             painter.setPen(QtGui.QColor(Config.numberhealthcolour))
             font_q = QtGui.QFont(Config.font, Config.hpsize)
             painter.setFont(font_q)
-            healthrect = make_rect(get_dyn_x(170), get_dyn_y(973), Config.xoffsethealth, Config.yoffsethealth, Config.healthanchor)
+            healthrect = make_rect(get_dyn_x(170), get_dyn_y(973), get_dyn_x(Config.xoffsethealth), get_dyn_y(Config.yoffsethealth), Config.healthanchor)
             painter.drawText(healthrect, ALIGN_MAP[Config.healthanchor], self.health_num_text)
 
         # number regen
@@ -619,7 +640,7 @@ class Overlay(QtWidgets.QWidget):
             painter.setPen(QtGui.QColor(Config.numberregencolour))
             font_q = QtGui.QFont(Config.font, Config.regensize)
             painter.setFont(font_q)
-            regenrect = make_rect(get_dyn_x(100), get_dyn_y(980), Config.xoffsetregen, Config.yoffsetregen, Config.regenanchor)
+            regenrect = make_rect(get_dyn_x(100), get_dyn_y(980), get_dyn_x(Config.xoffsetregen), get_dyn_y(Config.yoffsetregen), Config.regenanchor)
             painter.drawText(regenrect, ALIGN_MAP[Config.regenanchor], self.regen_text)
             
         # number ammo
@@ -627,7 +648,7 @@ class Overlay(QtWidgets.QWidget):
             painter.setPen(QtGui.QColor(Config.numberammocolour))
             font_q = QtGui.QFont(Config.font, Config.ammosize)
             painter.setFont(font_q)
-            ammorect = make_rect(get_dyn_pos_right(1620), get_dyn_y(980), Config.xoffsetammo, Config.yoffsetammo, Config.ammoanchor)
+            ammorect = make_rect(get_dyn_pos_right(1620), get_dyn_y(980), get_dyn_x(Config.xoffsetammo), get_dyn_pos_right(Config.yoffsetammo), Config.ammoanchor)
             painter.drawText(ammorect, ALIGN_MAP[Config.ammoanchor], self.numberammo_text)
         painter.end()
 
@@ -717,7 +738,7 @@ def imgui_thread(overlay):
                             for file in os.listdir(os.path.join(script_dir, "..", "YourConfigs")):
                                 changed, _ = imgui.menu_item(file, None, False, True)
                                 if changed:
-                                    Config.load_config(Config, os.path.join(script_dir, "..", "YourConfigs", file))
+                                    Config.load_config(os.path.join(script_dir, "..", "YourConfigs", file))
                     imgui.end_menu()
                 imgui.end_menu_bar()
             if Config.popup:
@@ -727,7 +748,7 @@ def imgui_thread(overlay):
                 imgui.text("Save config as:")
                 _, Config.Name = imgui.input_text("##Name", Config.Name, 29)
                 if imgui.button("Confirm"):
-                    Config.save_config(Config, True)
+                    Config.save_config(True)
                     with zipfile.ZipFile(os.path.join(script_dir, "..", "YourConfigs", Config.Name+".zip"), 'w', zipfile.ZIP_DEFLATED) as zip_ref:
                         for root, _, files in os.walk(os.path.join(script_dir, "..", "Config")):
                             for file in files:
@@ -987,9 +1008,10 @@ def imgui_thread(overlay):
     impl.shutdown()
     glfw.terminate()
 
-def main():
+def main():    
     # create QApplication first
     app = QtWidgets.QApplication(sys.argv)
+    start_capture()
     
     # query screen after creating app
     screen_geom = app.primaryScreen().geometry()
@@ -1000,6 +1022,9 @@ def main():
     overlay = Overlay(screen_width, screen_height)
     overlay.show()
 
+    # load config
+    Config.load_from_file(config_path)
+    
     # apply native click-through after show()
     overlay.set_click_through_native()
     
@@ -1007,8 +1032,8 @@ def main():
     threading.Thread(target=imgui_thread, args=(overlay,), daemon=True).start()
     
     # keyboard hotkeys (global)
-    keyboard.add_hotkey('delete', lambda: (print("Exiting..."+("      "*20)), Config.save_config(Config, False), overlay.config_watcher.stop(), QtCore.QCoreApplication.quit()))
-    keyboard.add_hotkey('insert', lambda: (setattr(Config, 'show_UI', not Config.show_UI), setattr(overlay, 'regen_extent', 0)))
+    keyboard.add_hotkey('delete', lambda: (print("Exiting..."+("      "*20)), Config.save_config(False), overlay.config_watcher.stop(), QtCore.QCoreApplication.quit()))
+    keyboard.add_hotkey('insert', lambda: (setattr(Config, 'show_UI', not Config.show_UI), setattr(overlay, 'regen_extent', 0), setattr(overlay, 'regen_text', f"{Config.regenprefix}0{Config.regensuffix}")))
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
