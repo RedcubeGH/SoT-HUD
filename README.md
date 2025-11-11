@@ -21,7 +21,7 @@ Based on my interpretation of the Code of Conduct this software is safe to use w
 2. Install the required dependencies:
 
    ```bash
-   pip install pyqt5 glfw imgui[glfw] Pillow pywin32 keyboard
+   py -3.11 -m pip install pillow pywin32 keyboard pyqt5 glfw pyimgui PyOpenGL watchdog windows-capture
    ```
 3. Run the program:
 
