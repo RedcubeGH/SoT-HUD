@@ -447,7 +447,7 @@ class Overlay(QtWidgets.QWidget):
                            (calibration_pixels[3] == calibration_pixels[4]).all() and \
                            (px[1] >= 178)
                     if cond:
-                        Config.calibrated_ammo_colour = tuple(px)
+                        Config.calibrated_ammo_colour = tuple(int(x) for x in px)
                         self.calibration_label.hide()
                         Config.save_config(False)
             except Exception as e:
