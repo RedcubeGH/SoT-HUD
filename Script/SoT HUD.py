@@ -17,13 +17,11 @@ import glfw
 import imgui
 from imgui.integrations.glfw import GlfwRenderer
 import threading
-import time
 from OpenGL.GL import *
 import zipfile
 import subprocess
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-from windows_capture import WindowsCapture, Frame, InternalCaptureControl
 import numpy as np
 
 # Paths
@@ -432,7 +430,6 @@ class Overlay(QtWidgets.QWidget):
             self.calibration_label.show()
             QtWidgets.QApplication.processEvents()
             try:
-                # Use batch capture for calibration
                 calibration_coords = [
                     (get_dyn_pos_right(1772), get_dyn_y(980)),
                     (get_dyn_pos_right(1746), get_dyn_y(980)),
@@ -487,7 +484,7 @@ class Overlay(QtWidgets.QWidget):
                 ]
                 pixel_coords.extend(health_coords)
                 
-                # Capture all pixels at once
+                # capture all pixels at once
                 all_pixels = get_multiple_pixels(pixel_coords)
                 
                 # Process ammo pixels
