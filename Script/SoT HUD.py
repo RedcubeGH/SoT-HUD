@@ -93,6 +93,7 @@ class Config:
     Name                    = "My Config"
     popup                   = False
     current_font            = 0
+    iteration               = 0
 
     # load Config.json
     @classmethod
@@ -185,33 +186,74 @@ def rgb_f_to_hex(rgb):
 
 def get_dyn_pos_right(pos):
     try:
-        hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
-        return round(win32gui.GetClientRect(hwnd)[2]+get_dyn_x(pos-1920))
+        return round(dynright+get_dyn_x(pos-1920))
     except Exception:
-        user32 = ctypes.windll.user32
-        sot_width = user32.GetSystemMetrics(0)
         return round(sot_width+get_dyn_x(pos-1920))
 
 def get_dyn_x(pos):
-    try:
-        hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
-        _, top, _, bot = win32gui.GetClientRect(hwnd)
-        sot_height = bot - top
-    except Exception:
-        user32 = ctypes.windll.user32
-        sot_height = user32.GetSystemMetrics(1)
     normal_sot_width = (sot_height / 9)*16
     return round((pos / 1920) * normal_sot_width)
 
 def get_dyn_y(pos):
+    return round((pos / 1080) * sot_height)
+
+def get_sizes():
+    global hwnd, dynright, sot_height, sot_width
     try:
         hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
-        _, top, _, bot = win32gui.GetClientRect(hwnd)
-        sot_height = bot - top
-    except Exception:
+        _, dyntop, dynright, dynbot = win32gui.GetClientRect(hwnd)
+        sot_height = dynbot - dyntop
+    except:
         user32 = ctypes.windll.user32
         sot_height = user32.GetSystemMetrics(1)
-    return round((pos / 1080) * sot_height)
+        sot_width = user32.GetSystemMetrics(0)
+
+def get_multiple_pixels(pixel_coords):
+    if not pixel_coords:
+        return []
+    
+    if hwnd == 0:
+        raise RuntimeError("Sea of Thieves window not found")
+    
+    left, top, right, bottom = win32gui.GetClientRect(hwnd)
+    width = right - left
+    height = bottom - top
+    
+    # Prepare DCs once
+    hwndDC = win32gui.GetWindowDC(hwnd)
+    mfcDC = win32ui.CreateDCFromHandle(hwndDC)
+    saveDC = mfcDC.CreateCompatibleDC()
+    
+    # Create bitmap once
+    saveBitMap = win32ui.CreateBitmap()
+    saveBitMap.CreateCompatibleBitmap(mfcDC, width, height)
+    saveDC.SelectObject(saveBitMap)
+    
+    # Single capture
+    result = windll.user32.PrintWindow(hwnd, saveDC.GetSafeHdc(), 3)
+    
+    # Extract entire image
+    bmpinfo = saveBitMap.GetInfo()
+    bmpstr = saveBitMap.GetBitmapBits(True)
+    img = np.frombuffer(bmpstr, dtype=np.uint8)
+    img = img.reshape((height, width, 4))
+    
+    # Get all requested pixels
+    pixels = []
+    for x, y in pixel_coords:
+        if 0 <= x < width and 0 <= y < height:
+            pixel_rgb = img[y, x, :3][::-1]  # BGR → RGB
+            pixels.append(pixel_rgb)
+        else:
+            pixels.append(None)
+    
+    # Cleanup
+    saveDC.DeleteDC()
+    mfcDC.DeleteDC()
+    win32gui.ReleaseDC(hwnd, hwndDC)
+    win32gui.DeleteObject(saveBitMap.GetHandle())
+    
+    return pixels
 
 # text anchor dict and function
 ALIGN_MAP = {
@@ -256,41 +298,6 @@ def make_rect(x, y, xoffset, yoffset, anchor="x"):
 
     elif anchor == "nw":
         return QtCore.QRect((x + int(xoffset)), (y + int(yoffset)), w, h)
-
-TARGET_WINDOW = "Sea of Thieves"
-latest_frame = None
-frame_ready = False
-# SoT capture
-def start_capture():
-    global capture
-    
-    capture = WindowsCapture(
-        cursor_capture=False,
-        draw_border=False,
-        window_name=TARGET_WINDOW
-    )
-
-    @capture.event
-    def on_frame_arrived(frame: Frame, capture_control: InternalCaptureControl):
-        global latest_frame, frame_ready
-        latest_frame = frame.frame_buffer[:, :, :3]  # BGRA → BGR
-        frame_ready = True
-
-    @capture.event
-    def on_closed():
-        print("Capture stopped")
-
-    capture.start_free_threaded()
-    
-def get_pixel(x, y):
-    global latest_frame, frame_ready
-    if not frame_ready or latest_frame is None:
-        return None
-    try:
-        b, g, r = latest_frame[y, x]
-        return (r, g, b)  # return RGB
-    except:
-        return None
     
 class PixmapManager:
     def __init__(self, base_dir):
@@ -361,7 +368,6 @@ class Overlay(QtWidgets.QWidget):
 
         # internal state
         self.fonts = QtGui.QFontDatabase().families()
-        self.screen_img = None
         self.ammo_states = [False]*6
         self.numberammo_text = ""
         self.health_num_text = ""
@@ -401,7 +407,6 @@ class Overlay(QtWidgets.QWidget):
             
     def update_config(self):
         Config.load_from_file(config_path)
-        time.sleep(0.1)
         self.load_all()
         self.update()
 
@@ -417,6 +422,9 @@ class Overlay(QtWidgets.QWidget):
 
     # this is the shit that handles the logic and instructs the painter what parts it should draw
     def update_loop(self):
+        Config.iteration = (Config.iteration + 1) % 10
+        if Config.iteration == 0:
+            get_sizes()
         # calibration stage
         if Config.calibrated_ammo_colour == (0,0,0):
             self.calibration_label.setText("Pull out a gun with full ammo to calibrate ammo colour")
@@ -424,19 +432,27 @@ class Overlay(QtWidgets.QWidget):
             self.calibration_label.show()
             QtWidgets.QApplication.processEvents()
             try:
-                hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
-                if hwnd == 0:
-                    raise RuntimeError("Game not found")
-                #screen_img = capture_client(hwnd)
-                px = get_pixel(get_dyn_pos_right(1772), get_dyn_y(980))
-                cond = (px == get_pixel(get_dyn_pos_right(1746), get_dyn_y(980)) == get_pixel(get_dyn_pos_right(1720), get_dyn_y(980)) == get_pixel(get_dyn_pos_right(1694), get_dyn_y(980)) == get_pixel(get_dyn_pos_right(1668), get_dyn_y(980)) and (px[1] >= 178))
-                if cond:
-                    Config.calibrated_ammo_colour = tuple(int(x) for x in px)
-                    self.calibration_label.hide()
-                    Config.save_config(False)
-                else:
-                    # keep trying
-                    pass
+                # Use batch capture for calibration
+                calibration_coords = [
+                    (get_dyn_pos_right(1772), get_dyn_y(980)),
+                    (get_dyn_pos_right(1746), get_dyn_y(980)),
+                    (get_dyn_pos_right(1720), get_dyn_y(980)),
+                    (get_dyn_pos_right(1694), get_dyn_y(980)),
+                    (get_dyn_pos_right(1668), get_dyn_y(980))
+                ]
+                calibration_pixels = get_multiple_pixels(calibration_coords)
+                
+                if len(calibration_pixels) == 5 and all(px is not None for px in calibration_pixels):
+                    px = calibration_pixels[0]
+                    cond = (calibration_pixels[0] == calibration_pixels[1]).all() and \
+                           (calibration_pixels[1] == calibration_pixels[2]).all() and \
+                           (calibration_pixels[2] == calibration_pixels[3]).all() and \
+                           (calibration_pixels[3] == calibration_pixels[4]).all() and \
+                           (px[1] >= 178)
+                    if cond:
+                        Config.calibrated_ammo_colour = tuple(px)
+                        self.calibration_label.hide()
+                        Config.save_config(False)
             except Exception as e:
                 print(f"Couldn't calibrate ammo colour: {e}"+(" "*20), end="\r", flush=True)
             return
@@ -444,87 +460,128 @@ class Overlay(QtWidgets.QWidget):
         try:
             # only do shit when game running and focused
             foreground = win32gui.GetForegroundWindow()
-            hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
             if hwnd and hwnd == foreground and not Config.show_UI:
-                #self.screen_img = capture_client(hwnd)
                 self.show_overlay = True
 
-                # Ammo detection
+                # Batch all pixel coordinates needed
+                pixel_coords = []
+                
+                # Ammo pixels
                 if Config.ammotoggle or Config.crosshairtoggle or Config.numberammotoggle:
+                    ammo_coords = []
                     for i in range(6):
-                        px = get_pixel(get_dyn_pos_right(1642) + get_dyn_x(26*i), get_dyn_y(980))
+                        x_pos = get_dyn_pos_right(1642) + get_dyn_x(26*i)
                         if self.screen_height == 1440:
-                            px = get_pixel(get_dyn_pos_right(1642) + 33*i, get_dyn_y(980))
-                        if px == tuple(Config.calibrated_ammo_colour):
+                            x_pos = get_dyn_pos_right(1648) + 33*i
+                        if self.screen_height == 2160:
+                            x_pos = get_dyn_pos_right(1641) + get_dyn_x(26*i)
+                        ammo_coords.append((x_pos, get_dyn_y(980)))
+                    pixel_coords.extend(ammo_coords)
+                
+                # Health/regen pixels
+                health_coords = [
+                    (get_dyn_x(169), get_dyn_y(977)),  # pixel_colour
+                    (get_dyn_x(176), get_dyn_y(977)),  # control_colour
+                    (get_dyn_x(141), get_dyn_y(955)),  # additional check
+                    (get_dyn_x(141), get_dyn_y(958))   # regen_control_colour
+                ]
+                pixel_coords.extend(health_coords)
+                
+                # Capture all pixels at once
+                all_pixels = get_multiple_pixels(pixel_coords)
+                
+                # Process ammo pixels
+                if Config.ammotoggle or Config.crosshairtoggle or Config.numberammotoggle and len(all_pixels) >= 6:
+                    ammo_pixels = all_pixels[:6]
+                    for i, px in enumerate(ammo_pixels):
+                        if px is not None and (px == Config.calibrated_ammo_colour).all():
                             self.ammo_states[i] = True
                         else:
                             self.ammo_states[i] = False
+                    
                     if Config.numberammotoggle:
                         for i in range(6):
                             if self.ammo_states[i]:
                                 ammocount = 6 - i
                                 self.numberammo_text = f"{Config.ammoprefix}{ammocount}{Config.ammosuffix}"
                                 break
+                
+                # Process health pixels
+                if len(all_pixels) >= 10:  # Make sure we have enough pixels
+                    pixel_colour = all_pixels[6] if all_pixels[6] is not None else np.array([0, 0, 0])  # (169, 977)
+                    control_colour = all_pixels[7] if all_pixels[7] is not None else np.array([0, 0, 0])  # (176, 977)
+                    additional_check = all_pixels[8] if all_pixels[8] is not None else np.array([0, 0, 0])  # (141, 955)
+                    regen_control_colour = all_pixels[9] if all_pixels[9] is not None else np.array([0, 0, 0])  # (141, 958)
+                    
+                    if (pixel_colour[:3].max() <= 3 and 
+                        additional_check[:3].max() <= 3 and 
+                        not (additional_check[:3] == control_colour[:3]).all() and 
+                        control_colour[1] >= 55 and not Config.show_UI):
+                        
+                        # show hud pieces when healthbar is there
+                        self.show_health = True
+                        self.show_regen = True
+                        
+                        if (regen_control_colour[0] <= Config.MAXREGENCOLOUR[0] and
+                            Config.MINREGENCOLOUR[1] <= regen_control_colour[1] <= Config.MAXREGENCOLOUR[1] and
+                            regen_control_colour[2] <= Config.MAXREGENCOLOUR[2]):
+                            
+                            # Batch regen circle pixels
+                            regen_coords = []
+                            for i in range(200):
+                                theta = (2 * math.pi / 200) * -(i+50)
+                                x = get_dyn_x(140 + 23 * math.cos(theta))
+                                y = get_dyn_y(982 + 23 * math.sin(theta))
+                                regen_coords.append((x, y))
+                            
+                            regen_pixels = get_multiple_pixels(regen_coords)
+                            
+                            for i, px in enumerate(regen_pixels):
+                                if px is not None and (px[0] <= Config.MAXREGENCOLOUR[0] and
+                                    Config.MINREGENCOLOUR[1] <= px[1] <= Config.MAXREGENCOLOUR[1] and
+                                    px[2] <= Config.MAXREGENCOLOUR[2]):
+                                    if Config.regentoggle:
+                                        overhealhp = 360-((i)*1.8)
+                                        self.regen_extent = int(overhealhp)
+                                    self.regen_text = f"{Config.regenprefix}{200-i}{Config.regensuffix}"
+                                    if i >= 198:
+                                        self.regen_extent = 0
+                                        self.regen_text = f"{Config.regenprefix}0{Config.regensuffix}"
+                                    break
 
-                # Health/regen detection
-                pixel_colour = get_pixel(get_dyn_x(169), get_dyn_y(977)) #supposed to be #000000
-                control_colour = get_pixel(get_dyn_x(176), get_dyn_y(977)) #supposed to be colour of healthbar
-                extra_px = get_pixel(get_dyn_x(141), get_dyn_y(955))
-                # ensure all pixels were read successfully and use explicit comparisons to avoid ambiguous truth-value of arrays
-                if (pixel_colour is not None and control_colour is not None and extra_px is not None and
-                    max(pixel_colour[:3]) <= 3 and extra_px != control_colour and control_colour[1] >= 55 and not Config.show_UI):
-                    # show hud pieces when healthbar is there
-                    self.show_health = True
-                    self.show_regen = True
-                    regen_control_colour = get_pixel(get_dyn_x(141), get_dyn_y(958))
-                    if (regen_control_colour[0] <= Config.MAXREGENCOLOUR[0] and
-                        Config.MINREGENCOLOUR[1] <= regen_control_colour[1] <= Config.MAXREGENCOLOUR[1] and
-                        regen_control_colour[2] <= Config.MAXREGENCOLOUR[2]):
-                        for i in range(200):
-                            theta = (2 * math.pi / 200) * -(i+50)
-                            x = get_dyn_x(140 + 23 * math.cos(theta))
-                            y = get_dyn_y(982 + 23 * math.sin(theta))
-                            px = get_pixel(x, y)
-                            if (px[0] <= Config.MAXREGENCOLOUR[0] and
-                                Config.MINREGENCOLOUR[1] <= px[1] <= Config.MAXREGENCOLOUR[1] and
-                                px[2] <= Config.MAXREGENCOLOUR[2]):
-                                if Config.regentoggle:
-                                    overhealhp = 360-((i)*1.8)
-                                    self.regen_extent = int(overhealhp)
-                                self.regen_text = f"{Config.regenprefix}{200-i}{Config.regensuffix}"
-                                if i >= 198:
-                                    self.regen_extent = 0
-                                    self.regen_text = f"{Config.regenprefix}0{Config.regensuffix}"
+                        # Batch health bar pixels
+                        health_coords = []
+                        for hp in range(100):
+                            health_coords.append((get_dyn_x(384 - (2*hp)), get_dyn_y(984)))
+                        
+                        health_pixels = get_multiple_pixels(health_coords)
+                        
+                        for hp, px in enumerate(health_pixels):
+                            if px is not None and (px == control_colour).all() and px[1] >= 55:
+                                self.current_hp = 100-hp
                                 break
 
-                    for hp in range(100):
-                        px = get_pixel(get_dyn_x(384 - (2*hp)), get_dyn_y(984))
-                        if px == control_colour and px[1] >= 55:
-                            self.current_hp = 100-hp
-                            break
+                        if Config.skulltoggle:
+                            self.show_skull_red = (self.current_hp <= Config.lowhealthvar)
+                            self.show_skull_green = not self.show_skull_red
 
-                    if Config.skulltoggle:
-                        self.show_skull_red = (self.current_hp <= Config.lowhealthvar)
-                        self.show_skull_green = not self.show_skull_red
+                        if Config.numberhealthtoggle:
+                            self.health_num_text = f"{Config.healthprefix}{self.current_hp}{Config.healthsuffix}"
 
-                    if Config.numberhealthtoggle:
-                        self.health_num_text = f"{Config.healthprefix}{self.current_hp}{Config.healthsuffix}"
-
-                else:
-                    # hide hud pieces if healthbar is not there
-                    self.show_health = False
-                    self.show_regen = False
-                    self.health_num_text = ""
-                    self.regen_text = f"{Config.regenprefix}0{Config.regensuffix}"
-                    self.show_skull_red = False
-                    self.show_skull_green = False
-                    self.current_hp = 0
-                    self.regen_extent = 0
+                    else:
+                        # hide hud pieces if healthbar is not there
+                        self.show_health = False
+                        self.show_regen = False
+                        self.health_num_text = ""
+                        self.regen_text = f"{Config.regenprefix}0{Config.regensuffix}"
+                        self.show_skull_red = False
+                        self.show_skull_green = False
+                        self.current_hp = 0
+                        self.regen_extent = 0
 
                 self.update()
             elif not Config.show_UI:
                 # hide hud when game not focused or not running
-                self.screen_img = None
                 self.ammo_states = [False]*6
                 self.numberammo_text = ""
                 self.show_overlay = False
@@ -1003,20 +1060,19 @@ def imgui_thread(overlay):
             set_clickthrough(hwnd, True)
         impl.render(imgui.get_draw_data())
         glfw.swap_buffers(window)
-        glfw.wait_events_timeout(0.01)
 
     impl.shutdown()
     glfw.terminate()
 
-def main():    
+def main():
     # create QApplication first
     app = QtWidgets.QApplication(sys.argv)
-    start_capture()
     
     # query screen after creating app
     screen_geom = app.primaryScreen().geometry()
     screen_width = screen_geom.width()
     screen_height = screen_geom.height()
+    get_sizes()
 
     # create and show overlay
     overlay = Overlay(screen_width, screen_height)
