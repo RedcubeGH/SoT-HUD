@@ -1,0 +1,8 @@
+profile_data.prof
+imgui.ini
+.vscode/settings.json
+YourConfigs/White Arena.zip
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
