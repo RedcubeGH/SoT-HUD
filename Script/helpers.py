@@ -1,6 +1,17 @@
 # helpers.py
 from PyQt5 import QtCore
-from pixel_utils import get_dyn_x, get_dyn_y
+from pixel_utils import get_dyn_x
+
+def hex_to_rgb_f(hex_color):
+    hex_color = hex_color.lstrip("#")
+    r = int(hex_color[0:2], 16) / 255.0
+    g = int(hex_color[2:4], 16) / 255.0
+    b = int(hex_color[4:6], 16) / 255.0
+    return [r, g, b]
+
+def rgb_f_to_hex(rgb):
+    r, g, b = rgb
+    return "#{:02X}{:02X}{:02X}".format(int(r*255), int(g*255), int(b*255))
 
 ALIGN_MAP = {
     "n":        QtCore.Qt.AlignTop    | QtCore.Qt.AlignHCenter,

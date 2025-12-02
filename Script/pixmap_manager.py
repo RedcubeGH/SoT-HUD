@@ -11,8 +11,6 @@ class PixmapManager:
 
     def load(self, name, size=None):
         key = (name, size)
-        if key in self.cache:
-            return self.cache[key]
         path = os.path.join(self.base_dir, name)
         if not os.path.exists(path):
             return None

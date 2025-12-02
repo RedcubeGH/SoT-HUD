@@ -7,8 +7,9 @@ import zipfile
 script_dir = os.path.dirname(os.path.abspath(__file__))
 config_path = os.path.join(script_dir, "..", "Config", "Config.json")
 
+# defaults settings incase Config.json is missing or incomplete
 class Config:
-    # configurable variables (defaults)
+    # configurable variables
     lowhealthvar            = 70
     lowhealthcolour         = "#FF3745"
     healthcolour            = "#43EF88"
@@ -35,13 +36,13 @@ class Config:
     numberhealthtoggle      = False
     numberammotoggle        = False
     numberregentoggle       = False
-    healthanchor            = "sw"
+    healthanchor            ="sw"
     xoffsethealth           = 0
     yoffsethealth           = 0
-    ammoanchor              = "e"
+    ammoanchor              ="e"
     xoffsetammo             = 0
     yoffsetammo             = 0
-    regenanchor             = "e"
+    regenanchor             ="e"
     xoffsetregen            = 0
     yoffsetregen            = 0
     healthprefix            = ""
@@ -55,7 +56,7 @@ class Config:
     MINREGENCOLOUR          = [0, 88, 0]
     MAXREGENCOLOUR          = [76, 239, 186]
     
-    # Non-config variables for imgui / runtime
+    # Non-config variables for imgui
     calibrated_ammo_colour  = (0, 0, 0)
     show_UI                 = False
     hp_slider               = 75.0
@@ -71,10 +72,9 @@ class Config:
     current_font            = 0
     iteration               = 0
 
+    # load Config.json
     @classmethod
-    def load_from_file(cls, path=None):
-        if path is None:
-            path = config_path
+    def load_from_file(cls, path):
         try:
             with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -83,11 +83,16 @@ class Config:
                     setattr(cls, k, v)
         except Exception:
             pass
+    
+    calibrated_ammo_colour = tuple(calibrated_ammo_colour)
+
+    if healthbardecotoggle and not regentoggle:
+        regentoggle     = True
+        overhealcolour  = "#4CEF7E"
+        regenbgcolour   = "#676767"
 
     @classmethod
-    def save_config(cls, export=False, path=None):
-        if path is None:
-            path = config_path
+    def save_config(cls, export = False):
         cfg = {
             "lowhealthvar":             cls.lowhealthvar,
             "lowhealthcolour":          cls.lowhealthcolour,
@@ -135,12 +140,12 @@ class Config:
         if export:
             cfg.pop("calibrated_ammo_colour", None)
         try:
-            with open(path, "w", encoding="utf-8") as f:
+            with open(config_path, "w", encoding="utf-8") as f:
                 json.dump(cfg, f, indent=4)
         except Exception:
             pass
-
+    
     @classmethod
-    def load_config(cls, zip_path):
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+    def load_config(cls, path):
+        with zipfile.ZipFile(path, 'r') as zip_ref:
             zip_ref.extractall(os.path.join(script_dir, "..", "Config"))
