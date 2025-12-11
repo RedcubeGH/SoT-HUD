@@ -100,6 +100,10 @@ def imgui_thread(overlay):
                                     changed, _ = imgui.menu_item(file, None, False, True)
                                     if changed:
                                         Config.load_config(os.path.join(script_dir, "..", "YourConfigs", file))
+                        changed, _ = imgui.menu_item('Open Folder', None, False, True)
+                        if changed:
+                            os.startfile(os.path.join(script_dir, "..", "YourConfigs"))
+                            Config.show_UI = False
                         imgui.end_menu()
                     imgui.end_menu_bar()
                 if Config.popup:
