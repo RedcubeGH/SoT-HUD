@@ -3,7 +3,7 @@ import os
 import math
 from PyQt5 import QtCore, QtGui, QtWidgets
 from config import Config, config_path, script_dir
-from pixel_utils import get_dyn_x, get_dyn_y, get_dyn_pos_right, get_multiple_pixels, get_sizes, hwnd
+from pixel_utils import get_dyn_x, get_dyn_y, get_dyn_pos_right, get_multiple_pixels, get_sizes
 from pixmap_manager import PixmapManager
 from watchers import ConfigWatcher
 from helpers import make_rect, ALIGN_MAP
@@ -57,12 +57,12 @@ class Overlay(QtWidgets.QWidget):
     # incase pyqt windowflag doesn't work js also do the shit that worked before (can't hurt can it)
     def set_click_through_native(self):
         try:
-            hwnd = int(self.winId())
-            exStyle = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
+            hwndqt = int(self.winId())
+            exStyle = win32gui.GetWindowLong(hwndqt, win32con.GWL_EXSTYLE)
             exStyle &= ~win32con.WS_EX_APPWINDOW
             exStyle &= ~win32con.WS_EX_TOOLWINDOW
             exStyle |= win32con.WS_EX_LAYERED | win32con.WS_EX_TRANSPARENT
-            win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, exStyle)
+            win32gui.SetWindowLong(hwndqt, win32con.GWL_EXSTYLE, exStyle)
         except Exception as e:
             print("Failed to set native click-through:", e)
 
@@ -120,11 +120,10 @@ class Overlay(QtWidgets.QWidget):
         try:
             # only do shit when game running and focused
             foreground = win32gui.GetForegroundWindow()
-            if hwnd and hwnd == foreground and not Config.show_UI:
+            if Config.hwnd and Config.hwnd == foreground and not Config.show_UI:
                 self.show_overlay = True
-
                 # Batch all pixel coordinates needed
-                pixel_coords = []
+                self.pixel_coords = []
                 
                 # Ammo pixels
                 if Config.ammotoggle or Config.crosshairtoggle or Config.numberammotoggle:
@@ -136,7 +135,7 @@ class Overlay(QtWidgets.QWidget):
                         if self.screen_height == 2160:
                             x_pos = get_dyn_pos_right(1641) + get_dyn_x(26*i)
                         ammo_coords.append((x_pos, get_dyn_y(980)))
-                    pixel_coords.extend(ammo_coords)
+                    self.pixel_coords.extend(ammo_coords)
                 
                 # Health/regen pixels
                 health_coords = [
@@ -145,14 +144,14 @@ class Overlay(QtWidgets.QWidget):
                     (get_dyn_x(141), get_dyn_y(955)),  # additional check
                     (get_dyn_x(141), get_dyn_y(958))   # regen_control_colour
                 ]
-                pixel_coords.extend(health_coords)
+                self.pixel_coords.extend(health_coords)
                 
                 # capture all pixels at once
-                all_pixels = get_multiple_pixels(pixel_coords)
+                self.all_pixels = get_multiple_pixels(self.pixel_coords)
                 
                 # Process ammo pixels
-                if Config.ammotoggle or Config.crosshairtoggle or Config.numberammotoggle and len(all_pixels) >= 6:
-                    ammo_pixels = all_pixels[:6]
+                if Config.ammotoggle or Config.crosshairtoggle or Config.numberammotoggle and len(self.all_pixels) >= 6:
+                    ammo_pixels = self.all_pixels[:6]
                     for i, px in enumerate(ammo_pixels):
                         if px is not None and (px == Config.calibrated_ammo_colour).all():
                             self.ammo_states[i] = True
@@ -167,13 +166,12 @@ class Overlay(QtWidgets.QWidget):
                                 break
                 
                 # Process health pixels
-                if len(all_pixels) >= 10:  # Make sure we have enough pixels
-                    pixel_colour = all_pixels[6] if all_pixels[6] is not None else np.array([0, 0, 0])  # (169, 977)
-                    control_colour = all_pixels[7] if all_pixels[7] is not None else np.array([0, 0, 0])  # (176, 977)
-                    additional_check = all_pixels[8] if all_pixels[8] is not None else np.array([0, 0, 0])  # (141, 955)
-                    regen_control_colour = all_pixels[9] if all_pixels[9] is not None else np.array([0, 0, 0])  # (141, 958)
-                    
-                    if (pixel_colour[:3].max() <= 3 and 
+                if len(self.all_pixels) >= 10:               # Make sure we have enough pixels
+                    pixel_colour = self.all_pixels[6]        # (169, 977)
+                    control_colour = self.all_pixels[7]      # (176, 977)
+                    additional_check = self.all_pixels[8]    # (141, 955)
+                    regen_control_colour = self.all_pixels[9]# (141, 958)
+                    if (pixel_colour[:3].max() <= 18 and 
                         additional_check[:3].max() <= 3 and 
                         not (additional_check[:3] == control_colour[:3]).all() and 
                         control_colour[1] >= 55 and not Config.show_UI):
@@ -286,7 +284,6 @@ class Overlay(QtWidgets.QWidget):
                     x = get_dyn_pos_right(1641) + get_dyn_x(26*i)   # offset to the left by 1px
                     y = get_dyn_y(981)                              # offset down by 1px
                 if self.ammo_states[i] and self.ammo_pix:
-                    print(f"Drawing ammo UI{get_dyn_pos_right(1642)}")
                     painter.drawPixmap(x - self.ammo_pix.width()//2, y - self.ammo_pix.height()//2, self.ammo_pix)
         
         # crosshair
@@ -368,4 +365,49 @@ class Overlay(QtWidgets.QWidget):
             painter.setFont(font_q)
             ammorect = make_rect(get_dyn_pos_right(1620), get_dyn_y(980), get_dyn_x(Config.xoffsetammo), get_dyn_pos_right(Config.yoffsetammo), Config.ammoanchor)
             painter.drawText(ammorect, ALIGN_MAP[Config.ammoanchor], self.numberammo_text)
+            
+        # DEBUGGING
+        if Config.debugmenu:
+            painter.setPen(QtGui.QColor("white"))
+            font_q = QtGui.QFont(None, 12)
+            painter.setFont(font_q)
+            debug_text = (
+                f"Window Handle: {Config.hwnd}\n"
+                f"HP: {self.current_hp}\n"
+                f"Ammo States: {self.ammo_states}\n"
+                f"Regen Extent: {self.regen_extent}\n"
+                f"Height: {Config.sot_height}\n"
+                f"Width: {Config.dynright}\n"
+                f"Calibrated Ammo Colour: {Config.calibrated_ammo_colour}\n"
+            )
+            painter.drawPixmap(400, 5, self.regen_skull_pix)
+            painter.drawPixmap(400, 65, self.red_skull_pix)
+            painter.drawPixmap(400, 120, self.green_skull_pix)
+            painter.drawPixmap(400, 180, self.ammo_pix)
+            painter.drawPixmap(400, 240, self.healthbar_bg_pix)
+            painter.drawPixmap(400, 300, self.ammo_bg_pix)
+            if hasattr(self, 'pixel_coords') and hasattr(self, 'all_pixels'):
+                for i, coord in enumerate(self.pixel_coords):
+                    debug_text += f"{coord} : {self.all_pixels[i] if i < len(self.all_pixels) else 'N/A'}\n"
+
+            painter.drawText(2, 50, 1920, 1080,
+                QtCore.Qt.TextWordWrap,
+                debug_text
+            )
+            
+            # Draw red pixels on every pixel coordinate
+            for coord in self.pixel_coords:
+                painter.setBrush(QtGui.QColor("red"))
+                painter.setPen(QtCore.Qt.NoPen)
+                painter.drawEllipse(QtCore.QRectF(coord[0] - 2, coord[1] - 2, 4, 4))
+                
+            # Draw line from first to last health bar pixel
+            if hasattr(self, 'all_pixels') and len(self.all_pixels) >= 10:
+                health_coords = []
+                for hp in range(100):
+                    health_coords.append((get_dyn_x(384 - (2*hp)), get_dyn_y(984)))
+                if len(health_coords) >= 2:
+                    painter.setPen(QtGui.QPen(QtGui.QColor("red"), 2))
+                    painter.drawLine(health_coords[0][0], health_coords[0][1], 
+                                   health_coords[-1][0], health_coords[-1][1])
         painter.end()

@@ -2,6 +2,7 @@
 import os
 import json
 import zipfile
+import win32gui
 
 # base script dir and config path (adjust if you place modules differently)
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -71,7 +72,15 @@ class Config:
     popup                   = False
     current_font            = 0
     iteration               = 0
-
+    debugmenu               = False
+    sot_height              = 0
+    sot_width               = 0
+    dynright                = 0
+    try:
+        hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
+    except:
+        hwnd = 0
+    
     # load Config.json
     @classmethod
     def load_from_file(cls, path):

@@ -4,41 +4,42 @@ import numpy as np
 import win32gui
 import win32ui
 from ctypes import windll
+from config import Config
 
 def get_dyn_pos_right(pos):
-    return round(dynright+get_dyn_x(pos-1920))
+    return round(Config.dynright+get_dyn_x(pos-1920))
 
 def get_dyn_x(pos):
-    normal_sot_width = (sot_height / 9)*16
+    normal_sot_width = (Config.sot_height / 9)*16
     return round((pos / 1920) * normal_sot_width)
 
 def get_dyn_y(pos):
-    return round((pos / 1080) * sot_height)
+    return round((pos / 1080) * Config.sot_height)
 
 def get_sizes():
-    global hwnd, dynright, sot_height, sot_width
     try:
         hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
-        _, dyntop, dynright, dynbot = win32gui.GetClientRect(hwnd)
-        sot_height = dynbot - dyntop
+        _, dyntop, Config.dynright, dynbot = win32gui.GetClientRect(hwnd)
+        Config.sot_height = dynbot - dyntop
     except:
+        hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
         user32 = ctypes.windll.user32
-        sot_height = user32.GetSystemMetrics(1)
-        dynright = sot_width = user32.GetSystemMetrics(0)
+        Config.sot_height = user32.GetSystemMetrics(1)
+        Config.dynright = Config.sot_width = user32.GetSystemMetrics(0)
 
 def get_multiple_pixels(pixel_coords):
     if not pixel_coords:
         return []
     
-    if hwnd == 0:
+    if Config.hwnd == 0:
         raise RuntimeError("Sea of Thieves window not found")
     
-    left, top, right, bottom = win32gui.GetClientRect(hwnd)
+    left, top, right, bottom = win32gui.GetClientRect(Config.hwnd)
     width = right - left
     height = bottom - top
     
     # Prepare DCs once
-    hwndDC = win32gui.GetWindowDC(hwnd)
+    hwndDC = win32gui.GetWindowDC(Config.hwnd)
     mfcDC = win32ui.CreateDCFromHandle(hwndDC)
     saveDC = mfcDC.CreateCompatibleDC()
     
@@ -48,7 +49,7 @@ def get_multiple_pixels(pixel_coords):
     saveDC.SelectObject(saveBitMap)
     
     # Single capture
-    windll.user32.PrintWindow(hwnd, saveDC.GetSafeHdc(), 3)
+    windll.user32.PrintWindow(Config.hwnd, saveDC.GetSafeHdc(), 3)
     
     # Extract entire image
     saveBitMap.GetInfo()
@@ -68,7 +69,7 @@ def get_multiple_pixels(pixel_coords):
     # Cleanup
     saveDC.DeleteDC()
     mfcDC.DeleteDC()
-    win32gui.ReleaseDC(hwnd, hwndDC)
+    win32gui.ReleaseDC(Config.hwnd, hwndDC)
     win32gui.DeleteObject(saveBitMap.GetHandle())
     
     return pixels
