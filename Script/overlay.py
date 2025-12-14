@@ -368,46 +368,49 @@ class Overlay(QtWidgets.QWidget):
             
         # DEBUGGING
         if Config.debugmenu:
-            painter.setPen(QtGui.QColor("white"))
-            font_q = QtGui.QFont(None, 12)
-            painter.setFont(font_q)
-            debug_text = (
-                f"Window Handle: {Config.hwnd}\n"
-                f"HP: {self.current_hp}\n"
-                f"Ammo States: {self.ammo_states}\n"
-                f"Regen Extent: {self.regen_extent}\n"
-                f"Height: {Config.sot_height}\n"
-                f"Width: {Config.dynright}\n"
-                f"Calibrated Ammo Colour: {Config.calibrated_ammo_colour}\n"
-            )
-            painter.drawPixmap(400, 5, self.regen_skull_pix)
-            painter.drawPixmap(400, 65, self.red_skull_pix)
-            painter.drawPixmap(400, 120, self.green_skull_pix)
-            painter.drawPixmap(400, 180, self.ammo_pix)
-            painter.drawPixmap(400, 240, self.healthbar_bg_pix)
-            painter.drawPixmap(400, 300, self.ammo_bg_pix)
-            if hasattr(self, 'pixel_coords') and hasattr(self, 'all_pixels'):
-                for i, coord in enumerate(self.pixel_coords):
-                    debug_text += f"{coord} : {self.all_pixels[i] if i < len(self.all_pixels) else 'N/A'}\n"
+            try:
+                painter.setPen(QtGui.QColor("white"))
+                font_q = QtGui.QFont(None, 12)
+                painter.setFont(font_q)
+                debug_text = (
+                    f"Window Handle: {Config.hwnd}\n"
+                    f"HP: {self.current_hp}\n"
+                    f"Ammo States: {self.ammo_states}\n"
+                    f"Regen Extent: {self.regen_extent}\n"
+                    f"Height: {Config.sot_height}\n"
+                    f"Width: {Config.dynright}\n"
+                    f"Calibrated Ammo Colour: {Config.calibrated_ammo_colour}\n"
+                )
+                painter.drawPixmap(400, 5, self.regen_skull_pix)
+                painter.drawPixmap(400, 65, self.red_skull_pix)
+                painter.drawPixmap(400, 120, self.green_skull_pix)
+                painter.drawPixmap(400, 180, self.ammo_pix)
+                painter.drawPixmap(400, 240, self.healthbar_bg_pix)
+                painter.drawPixmap(400, 300, self.ammo_bg_pix)
+                if hasattr(self, 'pixel_coords') and hasattr(self, 'all_pixels'):
+                    for i, coord in enumerate(self.pixel_coords):
+                        debug_text += f"{coord} : {self.all_pixels[i] if i < len(self.all_pixels) else 'N/A'}\n"
 
-            painter.drawText(2, 50, 1920, 1080,
-                QtCore.Qt.TextWordWrap,
-                debug_text
-            )
-            
-            # Draw red pixels on every pixel coordinate
-            for coord in self.pixel_coords:
-                painter.setBrush(QtGui.QColor("red"))
-                painter.setPen(QtCore.Qt.NoPen)
-                painter.drawEllipse(QtCore.QRectF(coord[0] - 2, coord[1] - 2, 4, 4))
+                painter.drawText(2, 50, 1920, 1080,
+                    QtCore.Qt.TextWordWrap,
+                    debug_text
+                )
                 
-            # Draw line from first to last health bar pixel
-            if hasattr(self, 'all_pixels') and len(self.all_pixels) >= 10:
-                health_coords = []
-                for hp in range(100):
-                    health_coords.append((get_dyn_x(384 - (2*hp)), get_dyn_y(984)))
-                if len(health_coords) >= 2:
-                    painter.setPen(QtGui.QPen(QtGui.QColor("red"), 2))
-                    painter.drawLine(health_coords[0][0], health_coords[0][1], 
-                                   health_coords[-1][0], health_coords[-1][1])
+                # Draw red pixels on every pixel coordinate
+                for coord in self.pixel_coords:
+                    painter.setBrush(QtGui.QColor("red"))
+                    painter.setPen(QtCore.Qt.NoPen)
+                    painter.drawEllipse(QtCore.QRectF(coord[0] - 2, coord[1] - 2, 4, 4))
+                    
+                # Draw line from first to last health bar pixel
+                if hasattr(self, 'all_pixels') and len(self.all_pixels) >= 10:
+                    health_coords = []
+                    for hp in range(100):
+                        health_coords.append((get_dyn_x(384 - (2*hp)), get_dyn_y(984)))
+                    if len(health_coords) >= 2:
+                        painter.setPen(QtGui.QPen(QtGui.QColor("red"), 2))
+                        painter.drawLine(health_coords[0][0], health_coords[0][1], 
+                                    health_coords[-1][0], health_coords[-1][1])
+            except Exception:
+                pass
         painter.end()

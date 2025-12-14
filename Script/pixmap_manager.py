@@ -10,16 +10,19 @@ class PixmapManager:
         self.cache = {}
 
     def load(self, name, size=None):
-        key = (name, size)
-        path = os.path.join(self.base_dir, name)
-        if not os.path.exists(path):
+        try:
+            key = (name, size)
+            path = os.path.join(self.base_dir, name)
+            if not os.path.exists(path):
+                return None
+            img = Image.open(path).convert("RGBA")
+            if size:
+                img = img.resize(size, Image.LANCZOS)
+            buf = BytesIO()
+            img.save(buf, format="PNG")
+            pix = QtGui.QPixmap()
+            pix.loadFromData(buf.getvalue())
+            self.cache[key] = pix
+            return pix
+        except Exception:
             return None
-        img = Image.open(path).convert("RGBA")
-        if size:
-            img = img.resize(size, Image.LANCZOS)
-        buf = BytesIO()
-        img.save(buf, format="PNG")
-        pix = QtGui.QPixmap()
-        pix.loadFromData(buf.getvalue())
-        self.cache[key] = pix
-        return pix
