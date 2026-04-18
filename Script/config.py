@@ -59,6 +59,8 @@ class Config:
     
     # Non-config variables for imgui
     calibrated_ammo_colour  = (0, 0, 0)
+    toggle_menu_hotkey      = "insert"
+    exit_hotkey             = "delete"
     show_UI                 = False
     hp_slider               = 75.0
     regen_slider            = 50.0
@@ -144,10 +146,14 @@ class Config:
             "ammosuffix":               cls.ammosuffix,
             "regenprefix":              cls.regenprefix,
             "regensuffix":              cls.regensuffix,
-            "calibrated_ammo_colour":   cls.calibrated_ammo_colour
+            "calibrated_ammo_colour":   cls.calibrated_ammo_colour,
+            "toggle_menu_hotkey":       cls.toggle_menu_hotkey,
+            "exit_hotkey":              cls.exit_hotkey,
         }
         if export:
             cfg.pop("calibrated_ammo_colour", None)
+            cfg.pop("toggle_menu_hotkey", None)
+            cfg.pop("exit_hotkey", None)
         try:
             with open(config_path, "w", encoding="utf-8") as f:
                 json.dump(cfg, f, indent=4)

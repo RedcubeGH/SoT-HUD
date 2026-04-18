@@ -6,11 +6,19 @@ import glfw
 import imgui
 from imgui.integrations.glfw import GlfwRenderer
 from OpenGL.GL import *
+from PyQt5 import QtCore
 from config import Config, script_dir
 from helpers import hex_to_rgb_f, rgb_f_to_hex
 from pixel_utils import get_dyn_x, get_dyn_y
 import win32gui
 import win32con
+import keyboard
+
+def update_hotkey(overlay):
+    if keyboard._hotkeys:
+        keyboard.clear_all_hotkeys()
+    keyboard.add_hotkey(Config.toggle_menu_hotkey, lambda: (setattr(Config, 'show_UI', not Config.show_UI), setattr(overlay, 'regen_extent', 0), setattr(overlay, 'regen_text', f"{Config.regenprefix}0{Config.regensuffix}")))
+    keyboard.add_hotkey(Config.exit_hotkey, lambda: (print("Exiting..."+("      "*20)), Config.save_config(False), overlay.config_watcher.stop(), QtCore.QCoreApplication.quit()))
 
 def imgui_thread(overlay):
     try:
@@ -73,6 +81,7 @@ def imgui_thread(overlay):
         # Create ImGui context and renderer
         imgui.create_context()
         impl = GlfwRenderer(window, attach_callbacks=True)
+        update_hotkey(overlay)
         
         while not glfw.window_should_close(window):
             glfw.poll_events()
@@ -120,6 +129,7 @@ def imgui_thread(overlay):
                                     file_path = os.path.join(root, file)
                                     arcname = os.path.relpath(file_path, os.path.join(script_dir, "..", "Config"))
                                     zip_ref.write(file_path, arcname)
+                        Config.save_config(False)
                         imgui.close_current_popup()
                     imgui.end_popup()    
                 imgui.begin_tab_bar("MainTabBar")
@@ -343,6 +353,20 @@ def imgui_thread(overlay):
                     if imgui.button("Recalibrate ammo colour"):
                         Config.calibrated_ammo_colour = (0,0,0)
                     changed, Config.debugmenu = imgui.checkbox("Debug menu", Config.debugmenu)
+                    if imgui.button(Config.toggle_menu_hotkey.upper()):
+                        event = keyboard.read_event()
+                        if event.event_type == keyboard.KEY_DOWN:
+                            Config.toggle_menu_hotkey = event.name
+                            update_hotkey(overlay)
+                    imgui.same_line()
+                    imgui.text(" - Menu hotkey")
+                    if imgui.button(Config.exit_hotkey.upper()):
+                        event = keyboard.read_event()
+                        if event.event_type == keyboard.KEY_DOWN:
+                            Config.exit_hotkey = event.name
+                            update_hotkey(overlay)
+                    imgui.same_line()
+                    imgui.text(" - Exit hotkey")
                     imgui.end_tab_item()
                 imgui.end_tab_bar()
                 overlay.current_hp = Config.hp_slider

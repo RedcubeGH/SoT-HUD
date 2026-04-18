@@ -1,8 +1,7 @@
 # main.py
 import sys
 import threading
-import keyboard
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets
 from config import Config, config_path
 from pixel_utils import get_sizes
 from overlay import Overlay
@@ -31,9 +30,6 @@ def main():
     # start imgui thread
     threading.Thread(target=imgui_thread, args=(overlay,), daemon=True).start()
     
-    # keyboard hotkeys (global)
-    keyboard.add_hotkey('delete', lambda: (print("Exiting..."+("      "*20)), Config.save_config(False), overlay.config_watcher.stop(), QtCore.QCoreApplication.quit()))
-    keyboard.add_hotkey('insert', lambda: (setattr(Config, 'show_UI', not Config.show_UI), setattr(overlay, 'regen_extent', 0), setattr(overlay, 'regen_text', f"{Config.regenprefix}0{Config.regensuffix}")))
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
