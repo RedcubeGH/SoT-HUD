@@ -7,3 +7,5 @@ __pycache__/
 *.pyd
 YourConfigs/*
 Configs/*
+/.vs/slnx.sqlite
+/.vs
