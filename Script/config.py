@@ -170,7 +170,26 @@ class Config:
             "advancedbaroffset":        cls.advancedbaroffset,
             "advancedhpbgoffset":       cls.advancedhpbgoffset,
             "advancedammooffset":       cls.advancedammooffset,
-            "advancedammobgoffset":     cls.advancedammobgoffset
+            "advancedammobgoffset":     cls.advancedammobgoffset,
+            "advancedskulloffset":      cls.advancedskulloffset,
+            "advancedskullbgoffset":    cls.advancedskullbgoffset,
+            "advancedregenoffset":      cls.advancedregenoffset,
+            "advancedcrosshairoffset":  cls.advancedcrosshairoffset,
+            "advancedskullscaling":     cls.advancedskullscaling,
+            "lockskullscaling":         cls.lockskullscaling,
+            "advancedammoscaling":      cls.advancedammoscaling,
+            "lockammoscaling":          cls.lockammoscaling,
+            "advancedammospacing":      cls.advancedammospacing,
+            "advancedammobgscaling":    cls.advancedammobgscaling,
+            "lockammobgscaling":        cls.lockammobgscaling,
+            "advancedbarscaling":       cls.advancedbarscaling,
+            "lockbarscaling":           cls.lockbarscaling,
+            "advancedhpbgscaling":      cls.advancedhpbgscaling,
+            "lockhpbgscaling":          cls.lockhpbgscaling,
+            "advancedregenscaling":     cls.advancedregenscaling,
+            "lockregenscaling":         cls.lockregenscaling,
+            "advancedskullbgscaling":   cls.advancedskullbgscaling,
+            "lockskullbgscaling":       cls.lockskullbgscaling
         }
         if export:
             cfg.pop("calibrated_ammo_colour", None)
