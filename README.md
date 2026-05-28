@@ -24,12 +24,15 @@ Based on my interpretation of the Code of Conduct this software is safe to use w
    ```
    git clone https://github.com/RedcubeGH/SoT-HUD
    ```
-3. Install the required dependencies:
+
+3. Run ```cd SoT-HUD```
+
+4. Install the required dependencies:
 
    ```bash
    py -3.11 -m pip install -r requirements.txt
    ```
-4. Run the program:
+5. Run the program:
 
    ```bash
    py -3.11 'Script/main.py'
