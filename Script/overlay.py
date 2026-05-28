@@ -73,21 +73,40 @@ class Overlay(QtWidgets.QWidget):
 
     def load_all(self):
         pm = PixmapManager(os.path.join(script_dir, "..", "Config"))
-        if Config.advancedconfig:
-            self.green_skull_pix   = pm.load("Health_Bar_Skull_Green.png", (get_dyn_x(53)*Config.advancedskullscaling[0],get_dyn_y(57)*Config.advancedskullscaling[1]))
-            self.red_skull_pix     = pm.load("Health_Bar_Skull_Red.png", (get_dyn_x(53)*Config.advancedskullscaling[0], get_dyn_y(57)*Config.advancedskullscaling[1]))
-            self.ammo_bg_pix       = pm.load("ammogauge-BG-Frame.png", (get_dyn_x(352)*Config.advancedammobgscaling[0], get_dyn_y(126)*Config.advancedammobgscaling[1]))
-            self.ammo_pix          = pm.load("ammogauge-pistol-ammunition.png", (get_dyn_x(22)*Config.advancedammoscaling[0], get_dyn_y(22)*Config.advancedammoscaling[1]))
-            self.healthbar_bg_pix  = pm.load("Health_Bar_BG_Frame.png", (get_dyn_x(315)*Config.advancedhpbgscaling[0], get_dyn_y(100)*Config.advancedhpbgscaling[1]))
-            self.regen_skull_pix   = pm.load("Regen_Meter_Skull.png", (get_dyn_x(60)*Config.advancedskullbgscaling[0], get_dyn_y(60)*Config.advancedskullbgscaling[1]))
+        self.green_skull_pix   = pm.load("Health_Bar_Skull_Green.png")
+        self.red_skull_pix     = pm.load("Health_Bar_Skull_Red.png")
+        self.ammo_bg_pix       = pm.load("ammogauge-BG-Frame.png")
+        self.ammo_pix          = pm.load("ammogauge-pistol-ammunition.png")
+        self.healthbar_bg_pix  = pm.load("Health_Bar_BG_Frame.png")
+        self.regen_skull_pix   = pm.load("Regen_Meter_Skull.png")
+        self.overlay_pix       = pm.load("General_Overlay.png")
+
+    def draw_pixmap_with_advanced_scaling(self, painter, pixmap, x, y, scaling, center=False):
+        if not pixmap:
+            return
+        if scaling[0] == 1 and scaling[1] == 1:
+            painter.drawPixmap(x, y, pixmap)
+            return
+        painter.save()
+        if center:
+            painter.translate(x + pixmap.width() / 2, y + pixmap.height() / 2)
+            painter.scale(scaling[0], scaling[1])
+            painter.translate(-pixmap.width() / 2, -pixmap.height() / 2)
+            painter.drawPixmap(0, 0, pixmap)
         else:
-            self.green_skull_pix   = pm.load("Health_Bar_Skull_Green.png", (get_dyn_x(53), get_dyn_y(57)))
-            self.red_skull_pix     = pm.load("Health_Bar_Skull_Red.png", (get_dyn_x(53), get_dyn_y(57)))
-            self.ammo_bg_pix       = pm.load("ammogauge-BG-Frame.png", (get_dyn_x(352), get_dyn_y(126)))
-            self.ammo_pix          = pm.load("ammogauge-pistol-ammunition.png", (get_dyn_x(22), get_dyn_y(22)))
-            self.healthbar_bg_pix  = pm.load("Health_Bar_BG_Frame.png", (get_dyn_x(315), get_dyn_y(100)))
-            self.regen_skull_pix   = pm.load("Regen_Meter_Skull.png", (get_dyn_x(60), get_dyn_y(60)))
-        self.overlay_pix       = pm.load("General_Overlay.png", (get_dyn_x(1920), get_dyn_y(1080)))
+            painter.translate(x, y)
+            painter.scale(scaling[0], scaling[1])
+            painter.drawPixmap(0, 0, pixmap)
+        painter.restore()
+
+    def get_pixmap_scaling(self, pixmap, target_size, extra_scaling=(1, 1)):
+        if not pixmap or not target_size:
+            return (1, 1)
+        if not pixmap.width() or not pixmap.height():
+            return (1, 1)
+        width_scale = target_size[0] / pixmap.width()
+        height_scale = target_size[1] / pixmap.height()
+        return (width_scale * extra_scaling[0], height_scale * extra_scaling[1])
 
     # this is the shit that handles the logic and instructs the painter what parts it should draw
     def update_loop(self):
@@ -269,6 +288,8 @@ class Overlay(QtWidgets.QWidget):
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        if not Config.advancedconfig:  
+            painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform)
         
         # overlay image
         if self.show_overlay and Config.overlaytoggle or Config.show_UI and Config.overlaytoggle:
@@ -278,7 +299,14 @@ class Overlay(QtWidgets.QWidget):
         
         #ammo decoration
         if Config.ammodecotoggle and any(self.ammo_states) or Config.show_UI and Config.ammodecotoggle:
-            painter.drawPixmap(get_dyn_pos_right(1546) + Config.advancedammobgoffset[0], get_dyn_y(919) + Config.advancedammobgoffset[1], self.ammo_bg_pix)
+            self.draw_pixmap_with_advanced_scaling(
+                painter,
+                self.ammo_bg_pix,
+                get_dyn_pos_right(1546) + Config.advancedammobgoffset[0],
+                get_dyn_y(919) + Config.advancedammobgoffset[1],
+                Config.advancedammobgscaling,
+                center=False
+            )
         
         # ammo image
         if Config.ammotoggle and any(self.ammo_states) or Config.show_UI and Config.ammotoggle:
@@ -292,10 +320,19 @@ class Overlay(QtWidgets.QWidget):
                     x = get_dyn_pos_right(1641) + get_dyn_x((26+Config.advancedammospacing)*i)   # offset to the left by 1px
                     y = get_dyn_y(981)                              # offset down by 1px
                 if self.ammo_states[i] and self.ammo_pix:
+                    top_left_x = x - self.ammo_pix.width()//2
+                    top_left_y = y - self.ammo_pix.height()//2
                     if Config.advancedconfig:
-                        painter.drawPixmap((x - self.ammo_pix.width()//2) + Config.advancedammooffset[0], (y - self.ammo_pix.height()//2) + Config.advancedammooffset[1], self.ammo_pix)
-                    else:
-                        painter.drawPixmap((x - self.ammo_pix.width()//2), (y - self.ammo_pix.height()//2), self.ammo_pix)
+                        top_left_x += Config.advancedammooffset[0]
+                        top_left_y += Config.advancedammooffset[1]
+                    self.draw_pixmap_with_advanced_scaling(
+                        painter,
+                        self.ammo_pix,
+                        top_left_x,
+                        top_left_y,
+                        Config.advancedammoscaling,
+                        center=True
+                    )
 
         # crosshair
         if Config.crosshairtoggle and (any(self.ammo_states) or Config.staticcrosshair) or Config.show_UI and Config.crosshairtoggle:
@@ -355,10 +392,25 @@ class Overlay(QtWidgets.QWidget):
                 painter.drawLine(br_x, get_dyn_y(990), tr_x, get_dyn_y(973))
         # healthbar decoration
         if Config.healthbardecotoggle and self.healthbar_bg_pix and self.show_health or Config.show_UI and Config.healthbardecotoggle:
-            if Config.advancedconfig:
-                painter.drawPixmap((get_dyn_x(256) - self.healthbar_bg_pix.width()//2) + Config.advancedhpbgoffset[0], (get_dyn_y(982) - self.healthbar_bg_pix.height()//2) + Config.advancedhpbgoffset[1], self.healthbar_bg_pix)
-            else:
-                painter.drawPixmap((get_dyn_x(256) - self.healthbar_bg_pix.width()//2), (get_dyn_y(982) - self.healthbar_bg_pix.height()//2), self.healthbar_bg_pix)
+            if self.healthbar_bg_pix:
+                x = get_dyn_x(256) - self.healthbar_bg_pix.width()//2
+                y = get_dyn_y(982) - self.healthbar_bg_pix.height()//2
+                scaling = self.get_pixmap_scaling(
+                    self.healthbar_bg_pix,
+                    (get_dyn_x(315), get_dyn_y(100)),
+                    Config.advancedhpbgscaling if Config.advancedconfig else (1, 1)
+                )
+                if Config.advancedconfig:
+                    x += Config.advancedhpbgoffset[0]
+                    y += Config.advancedhpbgoffset[1]
+                self.draw_pixmap_with_advanced_scaling(
+                    painter,
+                    self.healthbar_bg_pix,
+                    x,
+                    y,
+                    scaling,
+                    center=True
+                )
 
         # regen meter background + arc + skull
         if Config.regentoggle and self.show_regen or Config.show_UI and Config.regentoggle:
@@ -366,7 +418,7 @@ class Overlay(QtWidgets.QWidget):
             painter.setPen(QtCore.Qt.NoPen)
             if Config.advancedconfig:
                 painter.drawEllipse(QtCore.QRectF(get_dyn_x(114) + Config.advancedregenoffset[0], get_dyn_y(954) + Config.advancedregenoffset[1], get_dyn_x(54)*Config.advancedregenscaling[0], get_dyn_y(54)*Config.advancedregenscaling[1]))
-                rect = QtCore.QRectF(get_dyn_x(141-27) + Config.advancedregenoffset[0], get_dyn_y(981-27) + Config.advancedregenoffset[1], get_dyn_x(55)*Config.advancedregenscaling[0], get_dyn_y(55)*Config.advancedregenscaling[1]))
+                rect = QtCore.QRectF(get_dyn_x(141-27) + Config.advancedregenoffset[0], get_dyn_y(981-27) + Config.advancedregenoffset[1], get_dyn_x(55)*Config.advancedregenscaling[0], get_dyn_y(55)*Config.advancedregenscaling[1])
             else:
                 painter.drawEllipse(QtCore.QRectF(get_dyn_x(114), get_dyn_y(954), get_dyn_x(54), get_dyn_y(54)))
                 rect = QtCore.QRectF(get_dyn_x(141-27), get_dyn_y(981-27), get_dyn_x(55), get_dyn_y(55))
@@ -377,20 +429,49 @@ class Overlay(QtWidgets.QWidget):
             painter.setBrush(QtGui.QColor(Config.overhealcolour))
             painter.drawPie(rect, start16, span16)
             if self.regen_skull_pix:
-                if Config.advancedconfig:
-                    painter.drawPixmap(get_dyn_x(141) - self.regen_skull_pix.width()//2 + Config.advancedskullbgoffset[0], get_dyn_y(982) - self.regen_skull_pix.height()//2 + Config.advancedskullbgoffset[1], self.regen_skull_pix)
-                else:
-                    painter.drawPixmap(get_dyn_x(141) - self.regen_skull_pix.width()//2, get_dyn_y(982) - self.regen_skull_pix.height()//2, self.regen_skull_pix)
+                self.draw_pixmap_with_advanced_scaling(
+                    painter,
+                    self.regen_skull_pix,
+                    get_dyn_x(141) - self.regen_skull_pix.width()//2 + (Config.advancedskullbgoffset[0] if Config.advancedconfig else 0),
+                    get_dyn_y(982) - self.regen_skull_pix.height()//2 + (Config.advancedskullbgoffset[1] if Config.advancedconfig else 0),
+                    self.get_pixmap_scaling(
+                        self.regen_skull_pix,
+                        (get_dyn_x(60), get_dyn_y(60)),
+                        Config.advancedskullbgscaling if Config.advancedconfig else (1, 1)
+                    ),
+                    center=True
+                )
 
         # skulls
         if Config.skulltoggle and self.show_health or Config.show_UI and Config.skulltoggle:
             if self.show_skull_green and self.green_skull_pix:
+                x = get_dyn_x(140) - self.green_skull_pix.width()//2
+                y = get_dyn_y(981) - self.green_skull_pix.height()//2
                 if Config.advancedconfig:
-                    painter.drawPixmap(get_dyn_x(140) - self.green_skull_pix.width()//2 + Config.advancedskulloffset[0], get_dyn_y(981) - self.green_skull_pix.height()//2 + Config.advancedskulloffset[1], self.green_skull_pix)
-                else:
-                    painter.drawPixmap(get_dyn_x(140) - self.green_skull_pix.width()//2, get_dyn_y(981) - self.green_skull_pix.height()//2, self.green_skull_pix)
+                    x += Config.advancedskulloffset[0]
+                    y += Config.advancedskulloffset[1]
+                self.draw_pixmap_with_advanced_scaling(
+                    painter,
+                    self.green_skull_pix,
+                    x,
+                    y,
+                    self.get_pixmap_scaling(self.green_skull_pix, (get_dyn_x(53), get_dyn_y(57)), Config.advancedskullscaling if Config.advancedconfig else (1, 1)),
+                    center=True
+                )
             if self.show_skull_red and self.red_skull_pix:
-                painter.drawPixmap(get_dyn_x(140) - self.red_skull_pix.width()//2, get_dyn_y(981) - self.red_skull_pix.height()//2, self.red_skull_pix)
+                x = get_dyn_x(140) - self.red_skull_pix.width()//2
+                y = get_dyn_y(981) - self.red_skull_pix.height()//2
+                if Config.advancedconfig:
+                    x += Config.advancedskulloffset[0]
+                    y += Config.advancedskulloffset[1]
+                self.draw_pixmap_with_advanced_scaling(
+                    painter,
+                    self.red_skull_pix,
+                    x,
+                    y,
+                    self.get_pixmap_scaling(self.red_skull_pix, (get_dyn_x(53), get_dyn_y(57)), Config.advancedskullscaling if Config.advancedconfig else (1, 1)),
+                    center=True
+                )
         
         # number health
         if Config.numberhealthtoggle and self.health_num_text and self.show_health or Config.show_UI and Config.numberhealthtoggle:

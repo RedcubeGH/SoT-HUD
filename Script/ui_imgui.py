@@ -119,8 +119,8 @@ def imgui_thread(overlay):
                     Config.popup = False
                 if imgui.begin_popup("select-popup"):
                     imgui.text("Save config as:")
-                    _, Config.Name = imgui.input_text("##Name", Config.Name, 29)
-                    if imgui.button("Confirm"):
+                    _, Config.Name = imgui.input_text("##1", Config.Name, 29)
+                    if imgui.button("Confirm##2"):
                         Config.save_config(True)
                         with zipfile.ZipFile(os.path.join(script_dir, "..", "YourConfigs", Config.Name+".zip"), 'w', zipfile.ZIP_DEFLATED) as zip_ref:
                             for root, _, files in os.walk(os.path.join(script_dir, "..", "Config")):
@@ -133,35 +133,35 @@ def imgui_thread(overlay):
                     imgui.end_popup()    
                 imgui.begin_tab_bar("MainTabBar")
                 if imgui.begin_tab_item("Healthbar")[0]:
-                    changed, Config.healthbartoggle = imgui.checkbox("Healthbar", Config.healthbartoggle)
+                    changed, Config.healthbartoggle = imgui.checkbox("Healthbar##3", Config.healthbartoggle)
                     if Config.healthbartoggle:
                         health_rgb = hex_to_rgb_f(Config.healthcolour)
-                        changed, health_rgb = imgui.color_edit3("Health colour", *health_rgb)
+                        changed, health_rgb = imgui.color_edit3("Health colour##4", *health_rgb)
                         if changed:
                             Config.healthcolour = rgb_f_to_hex(health_rgb)
-                        changed, Config.low_hp_slider = imgui.slider_float("Critical health point", Config.low_hp_slider, 0, 100, "%.0f")
+                        changed, Config.low_hp_slider = imgui.slider_float("Critical health point##5", Config.low_hp_slider, 0, 100, "%.0f")
                         Config.lowhealthvar = int(Config.low_hp_slider)
                         if imgui.is_item_hovered() or imgui.is_item_active():
                             Config.lowhealthvarchanged = True
                         else:
                             Config.lowhealthvarchanged = False
                         lowhealth_rgb = hex_to_rgb_f(Config.lowhealthcolour)
-                        changed, lowhealth_rgb = imgui.color_edit3("Low health colour", *lowhealth_rgb)
+                        changed, lowhealth_rgb = imgui.color_edit3("Low health colour##6", *lowhealth_rgb)
                         if changed:
                             Config.lowhealthcolour = rgb_f_to_hex(lowhealth_rgb)
                         if Config.advancedconfig:
-                            changed, Config.advancedbaroffset = imgui.drag_int2("0", Config.advancedbaroffset[0], Config.advancedbaroffset[1], 1, -screen_width, screen_width)
+                            changed, Config.advancedbaroffset = imgui.drag_int2("Healthbar offset##7", Config.advancedbaroffset[0], Config.advancedbaroffset[1], 1, -screen_width, screen_width)
                             if Config.lockbarscaling:
-                                changed, Config.advancedbarscaling = imgui.drag_float2("Position", Config.advancedbarscaling[0], Config.advancedbarscaling[0], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedbarscaling = imgui.drag_float2("Healthbar scaling##8", Config.advancedbarscaling[0], Config.advancedbarscaling[0], 0.02, -screen_width, screen_width)
                             else:
-                                changed, Config.advancedbarscaling = imgui.drag_float2("Position", Config.advancedbarscaling[0], Config.advancedbarscaling[1], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedbarscaling = imgui.drag_float2("Healthbar scaling##9", Config.advancedbarscaling[0], Config.advancedbarscaling[1], 0.02, -screen_width, screen_width)
                             imgui.same_line()
-                            imgui.checkbox("Lock x/y scaling", Config.lockbarscaling)
+                            changed, Config.lockbarscaling = imgui.checkbox("Lock x/y scaling##10", Config.lockbarscaling)
                             
-                    changed, Config.healthbardecotoggle = imgui.checkbox("Healthbar decorations", Config.healthbardecotoggle)
+                    changed, Config.healthbardecotoggle = imgui.checkbox("Healthbar decorations##11", Config.healthbardecotoggle)
                     if Config.healthbardecotoggle:
                         imgui.same_line()
-                        if imgui.button("Open in Explorer"):
+                        if imgui.button("Open in Explorer##12"):
                             try:
                                 file_to_select = os.path.normpath(os.path.join(script_dir, "..", "Config", "Health_Bar_BG_Frame.png"))
                                 subprocess.run(["explorer", "/select,", file_to_select])
@@ -169,19 +169,19 @@ def imgui_thread(overlay):
                                 os.startfile(os.path.join(script_dir, "..", "Config"))
                             Config.show_UI = False
                         if Config.advancedconfig:
-                            changed, Config.advancedhpbgoffset = imgui.drag_int2("0", Config.advancedhpbgoffset[0], Config.advancedhpbgoffset[1], 1, -screen_width, screen_width)
+                            changed, Config.advancedhpbgoffset = imgui.drag_int2("Healthbar BG offset##13", Config.advancedhpbgoffset[0], Config.advancedhpbgoffset[1], 1, -screen_width, screen_width)
                             if Config.lockhpbgscaling:
-                                changed, Config.advancedhpbgscaling = imgui.drag_float2("Position", Config.advancedhpbgscaling[0], Config.advancedhpbgscaling[0], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedhpbgscaling = imgui.drag_float2("Healthbar BG scaling##14", Config.advancedhpbgscaling[0], Config.advancedhpbgscaling[0], 0.02, -screen_width, screen_width)
                             else:
-                                changed, Config.advancedhpbgscaling = imgui.drag_float2("Position ", Config.advancedhpbgscaling[0], Config.advancedhpbgscaling[1], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedhpbgscaling = imgui.drag_float2("Healthbar BG scaling##15", Config.advancedhpbgscaling[0], Config.advancedhpbgscaling[1], 0.02, -screen_width, screen_width)
                             imgui.same_line()
-                            imgui.checkbox("Lock x/y scaling", Config.lockhpbgscaling)
-                    changed, Config.numberhealthtoggle = imgui.checkbox("Health number", Config.numberhealthtoggle)
+                            changed, Config.lockhpbgscaling = imgui.checkbox("Lock x/y scaling##16", Config.lockhpbgscaling)
+                    changed, Config.numberhealthtoggle = imgui.checkbox("Health number##17", Config.numberhealthtoggle)
                     if Config.numberhealthtoggle:
-                        changed, Config.hpsize = imgui.drag_int("Font Size", Config.hpsize, 0.5, 1, 128)
-                        changed, Config.healthoffset = imgui.drag_int2("Position", Config.healthoffset[0], Config.healthoffset[1], 1, -screen_width, screen_width)
+                        changed, Config.hpsize = imgui.drag_int("Font size##18", Config.hpsize, 0.5, 1, 128)
+                        changed, Config.healthoffset = imgui.drag_int2("Health offset##19", Config.healthoffset[0], Config.healthoffset[1], 1, -screen_width, screen_width)
                         numberhealth_rgb = hex_to_rgb_f(Config.numberhealthcolour)
-                        changed, numberhealth_rgb = imgui.color_edit3("", *numberhealth_rgb)
+                        changed, numberhealth_rgb = imgui.color_edit3("##20", *numberhealth_rgb)
                         if changed:
                             Config.numberhealthcolour = rgb_f_to_hex(numberhealth_rgb)
                         for _, row in enumerate(anchor_grid):
@@ -202,45 +202,45 @@ def imgui_thread(overlay):
                         imgui.columns(3, "health_columns", False)  # False disables borders
                         imgui.set_column_width(0, 90)
                         imgui.push_item_width(80)
-                        changed, Config.healthprefix = imgui.input_text(" ", Config.healthprefix, 10)
+                        changed, Config.healthprefix = imgui.input_text("##21", Config.healthprefix, 10)
                         imgui.next_column()
                         imgui.set_column_width(1, 30)
                         imgui.text(f"{int(Config.hp_slider)}")
                         imgui.next_column()
                         imgui.set_column_width(2, 136)
-                        changed, Config.healthsuffix = imgui.input_text("  ", Config.healthsuffix, 11)
+                        changed, Config.healthsuffix = imgui.input_text("##22", Config.healthsuffix, 11)
                         imgui.pop_item_width()
                         imgui.next_column()
                         imgui.columns(1)
-                    changed, Config.hp_slider = imgui.slider_float("Health testing slider", Config.hp_slider, 0, 100, "%.0f")
+                    changed, Config.hp_slider = imgui.slider_float("Health testing slider##23", Config.hp_slider, 0, 100, "%.0f")
                     imgui.end_tab_item()
                     
                 # Regen meter tab
                 if imgui.begin_tab_item("Overheal")[0]:
                     # Regen meter
-                    changed, Config.regentoggle = imgui.checkbox("Regen meter", Config.regentoggle)
+                    changed, Config.regentoggle = imgui.checkbox("Regen meter##24", Config.regentoggle)
                     if Config.regentoggle:
                         overheal_rgb = hex_to_rgb_f(Config.overhealcolour)
-                        changed, overheal_rgb = imgui.color_edit3("Overheal colour", *overheal_rgb)
+                        changed, overheal_rgb = imgui.color_edit3("Overheal colour##25", *overheal_rgb)
                         if changed:
                             Config.overhealcolour = rgb_f_to_hex(overheal_rgb)
                         regenbg_rgb = hex_to_rgb_f(Config.regenbgcolour)
-                        changed, regenbg_rgb = imgui.color_edit3("Background colour", *regenbg_rgb)
+                        changed, regenbg_rgb = imgui.color_edit3("Background colour##26", *regenbg_rgb)
                         if changed:
                             Config.regenbgcolour = rgb_f_to_hex(regenbg_rgb)
                         if Config.advancedconfig:
-                            changed, Config.advancedregenoffset = imgui.drag_int2("0", Config.advancedregenoffset[0], Config.advancedregenoffset[1], 1, -screen_width, screen_width)
+                            changed, Config.advancedregenoffset = imgui.drag_int2("Overheal offset##27", Config.advancedregenoffset[0], Config.advancedregenoffset[1], 1, -screen_width, screen_width)
                             if Config.lockregenscaling:
-                                changed, Config.advancedregenscaling = imgui.drag_float2("Position", Config.advancedregenscaling[0], Config.advancedregenscaling[0], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedregenscaling = imgui.drag_float2("Overheal scaling##28", Config.advancedregenscaling[0], Config.advancedregenscaling[0], 0.02, -screen_width, screen_width)
                             else:
-                                changed, Config.advancedregenscaling = imgui.drag_float2("Position", Config.advancedregenscaling[0], Config.advancedregenscaling[1], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedregenscaling = imgui.drag_float2("Overheal scaling##29", Config.advancedregenscaling[0], Config.advancedregenscaling[1], 0.02, -screen_width, screen_width)
                             imgui.same_line()
-                            imgui.checkbox("Lock x/y scaling", Config.lockregenscaling)
+                            changed, Config.lockregenscaling = imgui.checkbox("Lock x/y scaling##30", Config.lockregenscaling)
                     # Healthbar skull
-                    changed, Config.skulltoggle = imgui.checkbox("Healthbar skull", Config.skulltoggle)
+                    changed, Config.skulltoggle = imgui.checkbox("Healthbar skull##31", Config.skulltoggle)
                     if Config.skulltoggle:
                         imgui.same_line()
-                        if imgui.button("Open in Explorer"):
+                        if imgui.button("Open in Explorer##32"):
                             try:
                                 file_to_select = os.path.normpath(os.path.join(script_dir, "..", "Config", "Health_Bar_Skull_Green.png"))
                                 subprocess.run(["explorer", "/select,", file_to_select])
@@ -248,28 +248,27 @@ def imgui_thread(overlay):
                                 os.startfile(os.path.join(script_dir, "..", "Config"))
                             Config.show_UI = False
                         if Config.advancedconfig:
-                            changed, Config.advancedskulloffset = imgui.drag_int2("0", Config.advancedskulloffset[0], Config.advancedskulloffset[1], 1, -screen_width, screen_width)
+                            changed, Config.advancedskulloffset = imgui.drag_int2("Skull offset##33", Config.advancedskulloffset[0], Config.advancedskulloffset[1], 1, -screen_width, screen_width)
                             if Config.lockskullscaling:
-                                changed, Config.advancedskullscaling = imgui.drag_float2("Position", Config.advancedskullscaling[0], Config.advancedskullscaling[0], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedskullscaling = imgui.drag_float2("Skull scaling##34", Config.advancedskullscaling[0], Config.advancedskullscaling[0], 0.02, -screen_width, screen_width)
                             else:
-                                changed, Config.advancedskullscaling = imgui.drag_float2("Position", Config.advancedskullscaling[0], Config.advancedskullscaling[1], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedskullscaling = imgui.drag_float2("Skull scaling##35", Config.advancedskullscaling[0], Config.advancedskullscaling[1], 0.02, -screen_width, screen_width)
                             imgui.same_line()
-                            imgui.checkbox("Lock x/y scaling", Config.lockskullscaling)
-                            changed, Config.advancedskullbgoffset = imgui.drag_int2("0", Config.advancedskullbgoffset[0], Config.advancedskullbgoffset[1], 1, -screen_width, screen_width)
+                            changed, Config.lockskullscaling = imgui.checkbox("Lock x/y scaling##36", Config.lockskullscaling)
+                            changed, Config.advancedskullbgoffset = imgui.drag_int2("Skull BG offset##37", Config.advancedskullbgoffset[0], Config.advancedskullbgoffset[1], 1, -screen_width, screen_width)
                             if Config.lockskullbgscaling:
-                                changed, Config.advancedskullbgscaling = imgui.drag_float2("Position", Config.advancedskullbgscaling[0], Config.advancedskullbgscaling[0], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedskullbgscaling = imgui.drag_float2("Skull BG scaling##38", Config.advancedskullbgscaling[0], Config.advancedskullbgscaling[0], 0.02, -screen_width, screen_width)
                             else:
-                                changed, Config.advancedskullbgscaling = imgui.drag_float2("Position", Config.advancedskullbgscaling[0], Config.advancedskullbgscaling[1], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedskullbgscaling = imgui.drag_float2("Skull BG scaling##39", Config.advancedskullbgscaling[0], Config.advancedskullbgscaling[1], 0.02, -screen_width, screen_width)
                             imgui.same_line()
-                            imgui.checkbox("Lock x/y scaling", Config.lockskullbgscaling)
+                            changed, Config.lockskullbgscaling = imgui.checkbox("Lock x/y scaling##40", Config.lockskullbgscaling)
                     # Overheal counter
-                    changed, Config.numberregentoggle = imgui.checkbox("Overheal number", Config.numberregentoggle)
+                    changed, Config.numberregentoggle = imgui.checkbox("Overheal number##41", Config.numberregentoggle)
                     if Config.numberregentoggle:
-                        changed, Config.regensize = imgui.drag_int("Font Size", Config.regensize, 0.5, 1, 128)
-                        changed, regenoffset = imgui.drag_int2("Position", Config.xoffsetregen, Config.yoffsetregen, 1, -screen_width, screen_width)
-                        Config.xoffsetregen, Config.yoffsetregen = regenoffset
+                        changed, Config.regensize = imgui.drag_int("Font size##42", Config.regensize, 0.5, 1, 128)
+                        changed, Config.regenoffset = imgui.drag_int2("Overheal number offset##43", Config.regenoffset[0], Config.regenoffset[1], 1, -screen_width, screen_width)
                         numberregen_rgb = hex_to_rgb_f(Config.numberregencolour)
-                        changed, numberregen_rgb = imgui.color_edit3("", *numberregen_rgb)
+                        changed, numberregen_rgb = imgui.color_edit3("##44", *numberregen_rgb)
                         if changed:
                             Config.numberregencolour = rgb_f_to_hex(numberregen_rgb)
                         for row_idx, row in enumerate(anchor_grid):
@@ -290,26 +289,26 @@ def imgui_thread(overlay):
                         imgui.columns(3, "regen_columns", False)  # False disables borders
                         imgui.set_column_width(0, 90)
                         imgui.push_item_width(80)
-                        changed, Config.regenprefix = imgui.input_text(" ", Config.regenprefix, 10)
+                        changed, Config.regenprefix = imgui.input_text("##45", Config.regenprefix, 10)
                         imgui.next_column()
                         imgui.set_column_width(1, 30)
                         imgui.text(f"{int(Config.regen_slider)}")
                         imgui.next_column()
                         imgui.set_column_width(2, 136)
-                        changed, Config.regensuffix = imgui.input_text("  ", Config.regensuffix, 11)
+                        changed, Config.regensuffix = imgui.input_text("##46", Config.regensuffix, 11)
                         imgui.pop_item_width()
                         imgui.next_column()
                         imgui.columns(1)
-                    changed, Config.regen_slider = imgui.slider_float("Regen testing slider", Config.regen_slider, 0, 200, "%.0f")
+                    changed, Config.regen_slider = imgui.slider_float("Regen testing slider##47", Config.regen_slider, 0, 200, "%.0f")
                     imgui.end_tab_item()
 
                 # Ammo tab
                 if imgui.begin_tab_item("Ammo")[0]:
                     # Ammo pellets
-                    changed, Config.ammotoggle = imgui.checkbox("Ammo", Config.ammotoggle)
+                    changed, Config.ammotoggle = imgui.checkbox("Ammo##48", Config.ammotoggle)
                     if Config.ammotoggle:
                         imgui.same_line()
-                        if imgui.button("Open in Explorer"):
+                        if imgui.button("Open in Explorer##49"):
                             try:
                                 file_to_select = os.path.normpath(os.path.join(script_dir, "..", "Config", "ammogauge-pistol-ammunition.png"))
                                 subprocess.run(["explorer", "/select,", file_to_select])
@@ -317,18 +316,18 @@ def imgui_thread(overlay):
                                 os.startfile(os.path.join(script_dir, "..", "Config"))
                             Config.show_UI = False
                         if Config.advancedconfig:
-                            changed, Config.advancedammooffset = imgui.drag_int2("0", Config.advancedammooffset[0], Config.advancedammooffset[1], 1, -screen_width, screen_width)
+                            changed, Config.advancedammooffset = imgui.drag_int2("Ammo offset##50", Config.advancedammooffset[0], Config.advancedammooffset[1], 1, -screen_width, screen_width)
                             if Config.lockammoscaling:
-                                changed, Config.advancedammoscaling = imgui.drag_float2("Position", Config.advancedammoscaling[0], Config.advancedammoscaling[0], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedammoscaling = imgui.drag_float2("Ammo scaling##51", Config.advancedammoscaling[0], Config.advancedammoscaling[0], 0.02, -screen_width, screen_width)
                             else:
-                                changed, Config.advancedammoscaling = imgui.drag_float2("Position ", Config.advancedammoscaling[0], Config.advancedammoscaling[1], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedammoscaling = imgui.drag_float2("Ammo scaling##52", Config.advancedammoscaling[0], Config.advancedammoscaling[1], 0.02, -screen_width, screen_width)
                             imgui.same_line()
-                            imgui.checkbox("Lock x/y scaling", Config.lockammoscaling)
+                            changed, Config.lockammoscaling = imgui.checkbox("Lock x/y scaling##53", Config.lockammoscaling)
                     # Ammo decorations
-                    changed, Config.ammodecotoggle = imgui.checkbox("Ammo decorations", Config.ammodecotoggle)
+                    changed, Config.ammodecotoggle = imgui.checkbox("Ammo decorations##54", Config.ammodecotoggle)
                     if Config.ammodecotoggle:
                         imgui.same_line()
-                        if imgui.button("Open in Explorer "):
+                        if imgui.button("Open in Explorer##55"):
                             try:
                                 file_to_select = os.path.normpath(os.path.join(script_dir, "..", "Config", "ammogauge-BG-Frame.png"))
                                 subprocess.run(["explorer", "/select,", file_to_select])
@@ -336,21 +335,20 @@ def imgui_thread(overlay):
                                 os.startfile(os.path.join(script_dir, "..", "Config"))
                             Config.show_UI = False
                         if Config.advancedconfig:
-                            changed, Config.advancedammobgoffset = imgui.drag_int2("0", Config.advancedammobgoffset[0], Config.advancedammobgoffset[1], 1, -screen_width, screen_width)
+                            changed, Config.advancedammobgoffset = imgui.drag_int2("Ammo BG offset##56", Config.advancedammobgoffset[0], Config.advancedammobgoffset[1], 1, -screen_width, screen_width)
                             if Config.lockammobgscaling:
-                                changed, Config.advancedammobgscaling = imgui.drag_float2("Position", Config.advancedammobgscaling[0], Config.advancedammobgscaling[0], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedammobgscaling = imgui.drag_float2("Ammo BG scaling##57", Config.advancedammobgscaling[0], Config.advancedammobgscaling[0], 0.02, -screen_width, screen_width)
                             else:
-                                changed, Config.advancedammobgscaling = imgui.drag_float2("Position", Config.advancedammobgscaling[0], Config.advancedammobgscaling[1], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedammobgscaling = imgui.drag_float2("Ammo BG scaling##58", Config.advancedammobgscaling[0], Config.advancedammobgscaling[1], 0.02, -screen_width, screen_width)
                             imgui.same_line()
-                            imgui.checkbox("Lock x/y scaling", Config.lockammobgscaling)
+                            changed, Config.lockammobgscaling = imgui.checkbox("Lock x/y scaling##59", Config.lockammobgscaling)
                     # Ammo counter
-                    changed, Config.numberammotoggle = imgui.checkbox("Ammo number", Config.numberammotoggle)
+                    changed, Config.numberammotoggle = imgui.checkbox("Ammo number##60", Config.numberammotoggle)
                     if Config.numberammotoggle:
-                        changed, Config.ammosize = imgui.drag_int("Font Size", Config.ammosize, 0.5, 1, 128)
-                        changed, ammooffset = imgui.drag_int2("Position", Config.xoffsetammo, Config.yoffsetammo, 1, -screen_width, screen_width)
-                        Config.xoffsetammo, Config.yoffsetammo = ammooffset
+                        changed, Config.ammosize = imgui.drag_int("Ammo number font size##61", Config.ammosize, 0.5, 1, 128)
+                        changed, Config.ammooffset = imgui.drag_int2("Ammo number offset##62", Config.ammooffset[0], Config.ammooffset[1], 1, -screen_width, screen_width)
                         numberammo_rgb = hex_to_rgb_f(Config.numberammocolour)
-                        changed, numberammo_rgb = imgui.color_edit3("", *numberammo_rgb)
+                        changed, numberammo_rgb = imgui.color_edit3("##63", *numberammo_rgb)
                         if changed:
                             Config.numberammocolour = rgb_f_to_hex(numberammo_rgb)
                         for _, row in enumerate(anchor_grid):
@@ -371,36 +369,36 @@ def imgui_thread(overlay):
                         imgui.columns(3, "ammo_columns", False)  # False disables borders
                         imgui.set_column_width(0, 90)
                         imgui.push_item_width(80)
-                        changed, Config.ammoprefix = imgui.input_text(" ", Config.ammoprefix, 10)
+                        changed, Config.ammoprefix = imgui.input_text("##64", Config.ammoprefix, 10)
                         imgui.next_column()
                         imgui.set_column_width(1, 30)
                         imgui.text(f"{int(Config.ammo_slider)}")
                         imgui.next_column()
                         imgui.set_column_width(2, 136)
-                        changed, Config.ammosuffix = imgui.input_text("  ", Config.ammosuffix, 11)
+                        changed, Config.ammosuffix = imgui.input_text("##65", Config.ammosuffix, 11)
                         imgui.pop_item_width()
                         imgui.next_column()
                         imgui.columns(1)
-                    changed, Config.ammo_slider = imgui.slider_int("Ammo testing slider", Config.ammo_slider, 0, 6, "%.0f")
+                    changed, Config.ammo_slider = imgui.slider_int("Ammo testing slider##66", Config.ammo_slider, 0, 6, "%.0f")
                     imgui.end_tab_item()
                 if imgui.begin_tab_item("Misc")[0]:
-                    changed, Config.crosshairtoggle = imgui.checkbox("Crosshair", Config.crosshairtoggle)
+                    changed, Config.crosshairtoggle = imgui.checkbox("Crosshair##67", Config.crosshairtoggle)
                     if Config.crosshairtoggle:
-                        changed, Config.staticcrosshair = imgui.checkbox("Static crosshair", Config.staticcrosshair)
+                        changed, Config.staticcrosshair = imgui.checkbox("Static crosshair##68", Config.staticcrosshair)
                         crosshair_rgb = hex_to_rgb_f(Config.crosshaircolour)
-                        changed, crosshair_rgb = imgui.color_edit3("Crosshair colour", *crosshair_rgb)
+                        changed, crosshair_rgb = imgui.color_edit3("Crosshair colour##69", *crosshair_rgb)
                         if changed:
                             Config.crosshaircolour = rgb_f_to_hex(crosshair_rgb)
                         crosshairoutline_rgb = hex_to_rgb_f(Config.crosshairoutlinecolour)
-                        changed, crosshairoutline_rgb = imgui.color_edit3("Crosshair outline colour", *crosshairoutline_rgb)
+                        changed, crosshairoutline_rgb = imgui.color_edit3("Crosshair outline colour##70", *crosshairoutline_rgb)
                         if changed:
                             Config.crosshairoutlinecolour = rgb_f_to_hex(crosshairoutline_rgb)
                         if Config.advancedconfig:
-                            changed, Config.advancedcrosshairoffset = imgui.drag_int2("0", Config.advancedcrosshairoffset[0], Config.advancedcrosshairoffset[1], 1, -screen_width, screen_width)
-                    changed, Config.overlaytoggle = imgui.checkbox("General overlay", Config.overlaytoggle)
+                            changed, Config.advancedcrosshairoffset = imgui.drag_int2("Crosshair offset##71", Config.advancedcrosshairoffset[0], Config.advancedcrosshairoffset[1], 1, -screen_width, screen_width)
+                    changed, Config.overlaytoggle = imgui.checkbox("General overlay##72", Config.overlaytoggle)
                     if Config.overlaytoggle:
                         imgui.same_line()
-                        if imgui.button("Open in Explorer"):
+                        if imgui.button("Open in Explorer##73"):
                             try:
                                 file_to_select = os.path.normpath(os.path.join(script_dir, "..", "Config", "General_Overlay.png"))
                                 subprocess.run(["explorer", "/select,", file_to_select])
@@ -413,26 +411,26 @@ def imgui_thread(overlay):
                         Config.font = "MS Shell Dlg 2" # standard pyqt font if invalid font
                         Config.current_font = overlay.fonts.index(Config.font)
                     _, Config.current_font = imgui.combo(
-                        "Font", Config.current_font, overlay.fonts, 30)
+                        "Font##74", Config.current_font, overlay.fonts, 30)
                     Config.font = overlay.fonts[Config.current_font]
-                    if imgui.button("Recalibrate ammo colour"):
+                    if imgui.button("Recalibrate ammo colour##75"):
                         Config.calibrated_ammo_colour = (0,0,0)
-                    changed, Config.debugmenu = imgui.checkbox("Debug menu", Config.debugmenu)
-                    if imgui.button(Config.toggle_menu_hotkey.upper()):
+                    changed, Config.debugmenu = imgui.checkbox("Debug menu##76", Config.debugmenu)
+                    if imgui.button(f"{Config.toggle_menu_hotkey.upper()}##77"):
                         event = keyboard.read_event()
                         if event.event_type == keyboard.KEY_DOWN:
                             Config.toggle_menu_hotkey = event.name
                             update_hotkey(overlay)
                     imgui.same_line()
                     imgui.text(" - Menu hotkey")
-                    if imgui.button(Config.exit_hotkey.upper()):
+                    if imgui.button(f"{Config.exit_hotkey.upper()}##78"):
                         event = keyboard.read_event()
                         if event.event_type == keyboard.KEY_DOWN:
                             Config.exit_hotkey = event.name
                             update_hotkey(overlay)
                     imgui.same_line()
                     imgui.text(" - Exit hotkey")
-                    changed, Config.advancedconfig = imgui.checkbox("Advanced Config Settings", Config.advancedconfig)
+                    changed, Config.advancedconfig = imgui.checkbox("Advanced Config Settings##79", Config.advancedconfig)
                     imgui.end_tab_item()
                 imgui.end_tab_bar()
                 overlay.current_hp = Config.hp_slider
