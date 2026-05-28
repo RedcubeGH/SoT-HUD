@@ -19,7 +19,7 @@ Based on my interpretation of the Code of Conduct this software is safe to use w
 
 1. Ensure [**Python 3.11**](https://www.python.org/downloads/release/python-31115/) is installed
 
-2. Clone the Repo:
+2. Clone the Repo with [Git](https://git-scm.com/install/):
 
    ```
    git clone https://github.com/RedcubeGH/SoT-HUD
