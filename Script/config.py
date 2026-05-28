@@ -11,47 +11,72 @@ config_path = os.path.join(script_dir, "..", "Config", "Config.json")
 # defaults settings incase Config.json is missing or incomplete
 class Config:
     # configurable variables
-    lowhealthvar            = 70
-    lowhealthcolour         = "#FF3745"
-    healthcolour            = "#43EF88"
-    overhealcolour          = "#4CEF7E"
-    regenbgcolour           = "#676767"
-    numberhealthcolour      = "#FFFFFF"
-    numberammocolour        = "#FFFFFF"
-    numberregencolour       = "#FFFFFF"
-    crosshaircolour         = "#FFFFFF"
-    crosshairoutlinecolour  = "#080808"
-    font                    = "Times New Roman"
-    ammosize                = 25
-    hpsize                  = 25
-    regensize               = 25
-    ammotoggle              = True
-    ammodecotoggle          = True
-    crosshairtoggle         = False
-    staticcrosshair         = False
-    healthbartoggle         = True
-    healthbardecotoggle     = True
-    skulltoggle             = True
-    regentoggle             = True
-    overlaytoggle           = False
-    numberhealthtoggle      = False
-    numberammotoggle        = False
-    numberregentoggle       = False
-    healthanchor            ="sw"
-    xoffsethealth           = 0
-    yoffsethealth           = 0
-    ammoanchor              ="e"
-    xoffsetammo             = 0
-    yoffsetammo             = 0
-    regenanchor             ="e"
-    xoffsetregen            = 0
-    yoffsetregen            = 0
-    healthprefix            = ""
-    healthsuffix            = "/100"
-    ammoprefix              = ""
-    ammosuffix              = "/5"
-    regenprefix             = ""
-    regensuffix             = ""
+    lowhealthvar             = 70
+    lowhealthcolour          = "#FF3745"
+    healthcolour             = "#43EF88"
+    overhealcolour           = "#4CEF7E"
+    regenbgcolour            = "#676767"
+    numberhealthcolour       = "#FFFFFF"
+    numberammocolour         = "#FFFFFF"
+    numberregencolour        = "#FFFFFF"
+    crosshaircolour          = "#FFFFFF"
+    crosshairoutlinecolour   = "#080808"
+    font                     = "Times New Roman"
+    ammosize                 = 25
+    hpsize                   = 25
+    regensize                = 25
+    ammotoggle               = True
+    ammodecotoggle           = True
+    crosshairtoggle          = False
+    staticcrosshair          = False
+    healthbartoggle          = True
+    healthbardecotoggle      = True
+    skulltoggle              = True
+    regentoggle              = True
+    overlaytoggle            = False
+    numberhealthtoggle       = False
+    numberammotoggle         = False
+    numberregentoggle        = False
+    healthanchor             = "sw"
+    healthoffset             = [0, 0]
+    ammoanchor               = "e"
+    ammooffset               = [0, 0]
+    regenanchor              = "e"
+    regenoffset              = [0, 0]
+    healthprefix             = ""
+    healthsuffix             = "/100"
+    ammoprefix               = ""
+    ammosuffix               = "/5"
+    regenprefix              = ""
+    regensuffix              = ""
+    toggle_menu_hotkey       = "insert"
+    exit_hotkey              = "delete"
+    advancedconfig           = False
+    advancedbaroffset        = [0, 0]
+    advancedhpbgoffset       = [0, 0]
+    advancedammooffset       = [0, 0]
+    advancedammobgoffset     = [0, 0]
+    advancedskulloffset      = [0, 0]
+    advancedskullbgoffset    = [0, 0]
+    advancedregenoffset      = [0, 0]
+    advancedcrosshairoffset  = [0, 0]
+    advancedskullscaling     = [1.0, 1.0]
+    lockskullscaling         = True
+    advancedammoscaling      = [1.0, 1.0]
+    lockammoscaling          = True
+    advancedammospacing      = 0
+    advancedammobgscaling    = [1.0, 1.0]
+    lockammobgscaling        = True
+    advancedbarscaling       = [1.0, 1.0]
+    lockbarscaling           = True
+    advancedhpbgscaling      = [1.0, 1.0]
+    lockhpbgscaling          = True
+    advancedregenscaling     = [1.0, 1.0]
+    lockregenscaling         = True
+    advancedregenscaling     = [1.0, 1.0]
+    lockregenscaling         = True
+    advancedskullbgscaling   = [1.0, 1.0]
+    lockskullbgscaling       = True
 
     # constants
     MINREGENCOLOUR          = [0, 88, 0]
@@ -59,17 +84,12 @@ class Config:
     
     # Non-config variables for imgui
     calibrated_ammo_colour  = (0, 0, 0)
-    toggle_menu_hotkey      = "insert"
-    exit_hotkey             = "delete"
     show_UI                 = False
     hp_slider               = 75.0
     regen_slider            = 50.0
     ammo_slider             = 5
     low_hp_slider           = lowhealthvar
     lowhealthvarchanged     = False
-    healthoffset            = xoffsethealth, yoffsethealth
-    ammooffset              = xoffsetammo, yoffsetammo
-    regenoffset             = xoffsetregen, yoffsetregen
     Name                    = "My Config"
     popup                   = False
     current_font            = 0
@@ -132,14 +152,11 @@ class Config:
             "numberammotoggle":         cls.numberammotoggle,
             "numberregentoggle":        cls.numberregentoggle,
             "healthanchor":             cls.healthanchor,
-            "xoffsethealth":            cls.xoffsethealth,
-            "yoffsethealth":            cls.yoffsethealth,
+            "healthoffset":             cls.healthoffset,
             "ammoanchor":               cls.ammoanchor,
-            "xoffsetammo":              cls.xoffsetammo,
-            "yoffsetammo":              cls.yoffsetammo,
+            "ammooffset":               cls.ammooffset,
             "regenanchor":              cls.regenanchor,
-            "xoffsetregen":             cls.xoffsetregen,
-            "yoffsetregen":             cls.yoffsetregen,
+            "regenoffset":              cls.regenoffset,
             "healthprefix":             cls.healthprefix,
             "healthsuffix":             cls.healthsuffix,
             "ammoprefix":               cls.ammoprefix,
@@ -149,6 +166,11 @@ class Config:
             "calibrated_ammo_colour":   cls.calibrated_ammo_colour,
             "toggle_menu_hotkey":       cls.toggle_menu_hotkey,
             "exit_hotkey":              cls.exit_hotkey,
+            "advancedconfig":           cls.advancedconfig,
+            "advancedbaroffset":        cls.advancedbaroffset,
+            "advancedhpbgoffset":       cls.advancedhpbgoffset,
+            "advancedammooffset":       cls.advancedammooffset,
+            "advancedammobgoffset":     cls.advancedammobgoffset
         }
         if export:
             cfg.pop("calibrated_ammo_colour", None)

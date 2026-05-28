@@ -73,12 +73,20 @@ class Overlay(QtWidgets.QWidget):
 
     def load_all(self):
         pm = PixmapManager(os.path.join(script_dir, "..", "Config"))
-        self.green_skull_pix   = pm.load("Health_Bar_Skull_Green.png", (get_dyn_x(53),get_dyn_y(57)))
-        self.red_skull_pix     = pm.load("Health_Bar_Skull_Red.png", (get_dyn_x(53), get_dyn_y(57)))
-        self.ammo_bg_pix       = pm.load("ammogauge-BG-Frame.png", (get_dyn_x(352), get_dyn_y(126)))
-        self.ammo_pix          = pm.load("ammogauge-pistol-ammunition.png", (get_dyn_x(22), get_dyn_y(22)))
-        self.healthbar_bg_pix  = pm.load("Health_Bar_BG_Frame.png", (get_dyn_x(315), get_dyn_y(100)))
-        self.regen_skull_pix   = pm.load("Regen_Meter_Skull.png", (get_dyn_x(60), get_dyn_y(60)))
+        if Config.advancedconfig:
+            self.green_skull_pix   = pm.load("Health_Bar_Skull_Green.png", (get_dyn_x(53)*Config.advancedskullscaling[0],get_dyn_y(57)*Config.advancedskullscaling[1]))
+            self.red_skull_pix     = pm.load("Health_Bar_Skull_Red.png", (get_dyn_x(53)*Config.advancedskullscaling[0], get_dyn_y(57)*Config.advancedskullscaling[1]))
+            self.ammo_bg_pix       = pm.load("ammogauge-BG-Frame.png", (get_dyn_x(352)*Config.advancedammobgscaling[0], get_dyn_y(126)*Config.advancedammobgscaling[1]))
+            self.ammo_pix          = pm.load("ammogauge-pistol-ammunition.png", (get_dyn_x(22)*Config.advancedammoscaling[0], get_dyn_y(22)*Config.advancedammoscaling[1]))
+            self.healthbar_bg_pix  = pm.load("Health_Bar_BG_Frame.png", (get_dyn_x(315)*Config.advancedhpbgscaling[0], get_dyn_y(100)*Config.advancedhpbgscaling[1]))
+            self.regen_skull_pix   = pm.load("Regen_Meter_Skull.png", (get_dyn_x(60)*Config.advancedskullbgscaling[0], get_dyn_y(60)*Config.advancedskullbgscaling[1]))
+        else:
+            self.green_skull_pix   = pm.load("Health_Bar_Skull_Green.png", (get_dyn_x(53), get_dyn_y(57)))
+            self.red_skull_pix     = pm.load("Health_Bar_Skull_Red.png", (get_dyn_x(53), get_dyn_y(57)))
+            self.ammo_bg_pix       = pm.load("ammogauge-BG-Frame.png", (get_dyn_x(352), get_dyn_y(126)))
+            self.ammo_pix          = pm.load("ammogauge-pistol-ammunition.png", (get_dyn_x(22), get_dyn_y(22)))
+            self.healthbar_bg_pix  = pm.load("Health_Bar_BG_Frame.png", (get_dyn_x(315), get_dyn_y(100)))
+            self.regen_skull_pix   = pm.load("Regen_Meter_Skull.png", (get_dyn_x(60), get_dyn_y(60)))
         self.overlay_pix       = pm.load("General_Overlay.png", (get_dyn_x(1920), get_dyn_y(1080)))
 
     # this is the shit that handles the logic and instructs the painter what parts it should draw
@@ -270,36 +278,60 @@ class Overlay(QtWidgets.QWidget):
         
         #ammo decoration
         if Config.ammodecotoggle and any(self.ammo_states) or Config.show_UI and Config.ammodecotoggle:
-            painter.drawPixmap(get_dyn_pos_right(1546), get_dyn_y(919), self.ammo_bg_pix)
+            painter.drawPixmap(get_dyn_pos_right(1546) + Config.advancedammobgoffset[0], get_dyn_y(919) + Config.advancedammobgoffset[1], self.ammo_bg_pix)
         
         # ammo image
         if Config.ammotoggle and any(self.ammo_states) or Config.show_UI and Config.ammotoggle:
             for i in range(6):
-                x = get_dyn_pos_right(1642) + get_dyn_x(26*i)
+                x = get_dyn_pos_right(1642) + get_dyn_x((26+Config.advancedammospacing)*i)
                 y = get_dyn_y(980)
                 if self.screen_height == 1440:                      # insanely shitty temporary fix for the ammo being off on higher res (love sot jank)
-                    x = get_dyn_pos_right(1648) + 33*i              # ammo spacing inconsistent and offset to the right by 6px for some reason
+                    x = get_dyn_pos_right(1648) + (33+Config.advancedammospacing)*i              # ammo spacing inconsistent and offset to the right by 6px for some reason
                     y = get_dyn_y(981)                              # offset down by 1px
                 if self.screen_height == 2160:                      # 
-                    x = get_dyn_pos_right(1641) + get_dyn_x(26*i)   # offset to the left by 1px
+                    x = get_dyn_pos_right(1641) + get_dyn_x((26+Config.advancedammospacing)*i)   # offset to the left by 1px
                     y = get_dyn_y(981)                              # offset down by 1px
                 if self.ammo_states[i] and self.ammo_pix:
-                    painter.drawPixmap(x - self.ammo_pix.width()//2, y - self.ammo_pix.height()//2, self.ammo_pix)
-        
+                    if Config.advancedconfig:
+                        painter.drawPixmap((x - self.ammo_pix.width()//2) + Config.advancedammooffset[0], (y - self.ammo_pix.height()//2) + Config.advancedammooffset[1], self.ammo_pix)
+                    else:
+                        painter.drawPixmap((x - self.ammo_pix.width()//2), (y - self.ammo_pix.height()//2), self.ammo_pix)
+
         # crosshair
         if Config.crosshairtoggle and (any(self.ammo_states) or Config.staticcrosshair) or Config.show_UI and Config.crosshairtoggle:
             painter.setBrush(QtGui.QColor(Config.crosshaircolour))
             painter.setPen(QtGui.QColor(Config.crosshairoutlinecolour))
             diameter = 4
-            painter.drawEllipse(QtCore.QRectF(self.screen_width/2 - diameter/2, self.screen_height/2 - diameter/2, diameter, diameter))
+            painter.drawEllipse(QtCore.QRectF(self.screen_width/2 - diameter/2 + Config.advancedcrosshairoffset[0], self.screen_height/2 - diameter/2 + Config.advancedcrosshairoffset[1], diameter, diameter))
             
         # healthbar polygon
         if Config.healthbartoggle and getattr(self, "current_hp", None) is not None and self.show_health or Config.show_UI and Config.healthbartoggle:
             hp = self.current_hp
             br_x = get_dyn_x(396 - (((396-192)/100)*(100-hp)))
             tr_x = get_dyn_x(380 - (((380-176)/100)*(100-hp)))
-            pts = [QtCore.QPointF(get_dyn_x(165),get_dyn_y(973)), QtCore.QPointF(get_dyn_x(181),get_dyn_y(990)), QtCore.QPointF(br_x, get_dyn_y(990)), QtCore.QPointF(tr_x, get_dyn_y(973))]
-            poly = QtGui.QPolygonF(pts)
+            if Config.advancedconfig:
+                pts =  [QtCore.QPointF(get_dyn_x(165) + Config.advancedbaroffset[0], get_dyn_y(973) + Config.advancedbaroffset[1]),      #top left
+                        QtCore.QPointF(get_dyn_x(181) + Config.advancedbaroffset[0], get_dyn_y(990) + Config.advancedbaroffset[1]),      #bottom left
+                        QtCore.QPointF(br_x + Config.advancedbaroffset[0], get_dyn_y(990) + Config.advancedbaroffset[1]),               #bottom right
+                        QtCore.QPointF(tr_x + Config.advancedbaroffset[0], get_dyn_y(973) + Config.advancedbaroffset[1])                #top right
+                        ]
+                poly = QtGui.QPolygonF(pts)
+                if Config.advancedbarscaling != [1, 1]:
+                    center = poly.boundingRect().center()
+                    poly = (
+                        QtGui.QTransform()
+                        .translate(center.x(), center.y())
+                        .scale(Config.advancedbarscaling[0], Config.advancedbarscaling[1])
+                        .translate(-center.x(), -center.y())
+                        .map(poly)
+                    )
+            else:
+                pts =  [QtCore.QPointF(get_dyn_x(165),get_dyn_y(973)),
+                        QtCore.QPointF(get_dyn_x(181),get_dyn_y(990)),
+                        QtCore.QPointF(br_x, get_dyn_y(990)), 
+                        QtCore.QPointF(tr_x, get_dyn_y(973))
+                        ]
+                poly = QtGui.QPolygonF(pts)
             color = Config.lowhealthcolour if self.current_hp <= Config.lowhealthvar else Config.healthcolour
             painter.setBrush(QtGui.QColor(color))
             painter.setPen(QtCore.Qt.NoPen)
@@ -311,21 +343,33 @@ class Overlay(QtWidgets.QWidget):
             tr_x = get_dyn_x(380 - (((380-176)/100)*(100-Config.lowhealthvar)))
             pen = QtGui.QPen(QtCore.Qt.black, 4)
             painter.setPen(pen)
-            painter.drawLine(br_x, get_dyn_y(990), tr_x, get_dyn_y(973))
+            if Config.advancedconfig:
+                painter.drawLine(br_x + Config.advancedbaroffset[0], get_dyn_y(990) + Config.advancedbaroffset[1], tr_x + Config.advancedbaroffset[0], get_dyn_y(973) + Config.advancedbaroffset[1])
+            else:
+                painter.drawLine(br_x, get_dyn_y(990), tr_x, get_dyn_y(973))
             pen = QtGui.QPen(QtCore.Qt.red, 2)
             painter.setPen(pen)
-            painter.drawLine(br_x, get_dyn_y(990), tr_x, get_dyn_y(973))
-
+            if Config.advancedconfig:
+                painter.drawLine(br_x + Config.advancedbaroffset[0], get_dyn_y(990) + Config.advancedbaroffset[1], tr_x + Config.advancedbaroffset[0], get_dyn_y(973) + Config.advancedbaroffset[1])
+            else:
+                painter.drawLine(br_x, get_dyn_y(990), tr_x, get_dyn_y(973))
         # healthbar decoration
         if Config.healthbardecotoggle and self.healthbar_bg_pix and self.show_health or Config.show_UI and Config.healthbardecotoggle:
-            painter.drawPixmap(get_dyn_x(256) - self.healthbar_bg_pix.width()//2, get_dyn_y(982) - self.healthbar_bg_pix.height()//2, self.healthbar_bg_pix)
+            if Config.advancedconfig:
+                painter.drawPixmap((get_dyn_x(256) - self.healthbar_bg_pix.width()//2) + Config.advancedhpbgoffset[0], (get_dyn_y(982) - self.healthbar_bg_pix.height()//2) + Config.advancedhpbgoffset[1], self.healthbar_bg_pix)
+            else:
+                painter.drawPixmap((get_dyn_x(256) - self.healthbar_bg_pix.width()//2), (get_dyn_y(982) - self.healthbar_bg_pix.height()//2), self.healthbar_bg_pix)
 
         # regen meter background + arc + skull
         if Config.regentoggle and self.show_regen or Config.show_UI and Config.regentoggle:
             painter.setBrush(QtGui.QColor(Config.regenbgcolour))
             painter.setPen(QtCore.Qt.NoPen)
-            painter.drawEllipse(QtCore.QRectF(get_dyn_x(114), get_dyn_y(954), get_dyn_x(54), get_dyn_y(54)))
-            rect = QtCore.QRectF(get_dyn_x(141-27), get_dyn_y(981-27), get_dyn_x(55), get_dyn_y(55))
+            if Config.advancedconfig:
+                painter.drawEllipse(QtCore.QRectF(get_dyn_x(114) + Config.advancedregenoffset[0], get_dyn_y(954) + Config.advancedregenoffset[1], get_dyn_x(54)*Config.advancedregenscaling[0], get_dyn_y(54)*Config.advancedregenscaling[1]))
+                rect = QtCore.QRectF(get_dyn_x(141-27) + Config.advancedregenoffset[0], get_dyn_y(981-27) + Config.advancedregenoffset[1], get_dyn_x(55)*Config.advancedregenscaling[0], get_dyn_y(55)*Config.advancedregenscaling[1]))
+            else:
+                painter.drawEllipse(QtCore.QRectF(get_dyn_x(114), get_dyn_y(954), get_dyn_x(54), get_dyn_y(54)))
+                rect = QtCore.QRectF(get_dyn_x(141-27), get_dyn_y(981-27), get_dyn_x(55), get_dyn_y(55))
             start_deg = 90
             span_deg = -self.regen_extent
             start16 = int(start_deg * 16)
@@ -333,12 +377,18 @@ class Overlay(QtWidgets.QWidget):
             painter.setBrush(QtGui.QColor(Config.overhealcolour))
             painter.drawPie(rect, start16, span16)
             if self.regen_skull_pix:
-                painter.drawPixmap(get_dyn_x(141) - self.regen_skull_pix.width()//2, get_dyn_y(982) - self.regen_skull_pix.height()//2, self.regen_skull_pix)
+                if Config.advancedconfig:
+                    painter.drawPixmap(get_dyn_x(141) - self.regen_skull_pix.width()//2 + Config.advancedskullbgoffset[0], get_dyn_y(982) - self.regen_skull_pix.height()//2 + Config.advancedskullbgoffset[1], self.regen_skull_pix)
+                else:
+                    painter.drawPixmap(get_dyn_x(141) - self.regen_skull_pix.width()//2, get_dyn_y(982) - self.regen_skull_pix.height()//2, self.regen_skull_pix)
 
         # skulls
         if Config.skulltoggle and self.show_health or Config.show_UI and Config.skulltoggle:
             if self.show_skull_green and self.green_skull_pix:
-                painter.drawPixmap(get_dyn_x(140) - self.green_skull_pix.width()//2, get_dyn_y(981) - self.green_skull_pix.height()//2, self.green_skull_pix)
+                if Config.advancedconfig:
+                    painter.drawPixmap(get_dyn_x(140) - self.green_skull_pix.width()//2 + Config.advancedskulloffset[0], get_dyn_y(981) - self.green_skull_pix.height()//2 + Config.advancedskulloffset[1], self.green_skull_pix)
+                else:
+                    painter.drawPixmap(get_dyn_x(140) - self.green_skull_pix.width()//2, get_dyn_y(981) - self.green_skull_pix.height()//2, self.green_skull_pix)
             if self.show_skull_red and self.red_skull_pix:
                 painter.drawPixmap(get_dyn_x(140) - self.red_skull_pix.width()//2, get_dyn_y(981) - self.red_skull_pix.height()//2, self.red_skull_pix)
         
@@ -347,7 +397,7 @@ class Overlay(QtWidgets.QWidget):
             painter.setPen(QtGui.QColor(Config.numberhealthcolour))
             font_q = QtGui.QFont(Config.font, Config.hpsize)
             painter.setFont(font_q)
-            healthrect = make_rect(get_dyn_x(170), get_dyn_y(973), get_dyn_x(Config.xoffsethealth), get_dyn_y(Config.yoffsethealth), Config.healthanchor)
+            healthrect = make_rect(get_dyn_x(170), get_dyn_y(973), get_dyn_x(Config.healthoffset[0]), get_dyn_y(Config.healthoffset[1]), Config.healthanchor)
             painter.drawText(healthrect, ALIGN_MAP[Config.healthanchor], self.health_num_text)
 
         # number regen
@@ -355,7 +405,7 @@ class Overlay(QtWidgets.QWidget):
             painter.setPen(QtGui.QColor(Config.numberregencolour))
             font_q = QtGui.QFont(Config.font, Config.regensize)
             painter.setFont(font_q)
-            regenrect = make_rect(get_dyn_x(100), get_dyn_y(980), get_dyn_x(Config.xoffsetregen), get_dyn_y(Config.yoffsetregen), Config.regenanchor)
+            regenrect = make_rect(get_dyn_x(100), get_dyn_y(980), get_dyn_x(Config.regenoffset[0]), get_dyn_y(Config.regenoffset[1]), Config.regenanchor)
             painter.drawText(regenrect, ALIGN_MAP[Config.regenanchor], self.regen_text)
             
         # number ammo
@@ -363,7 +413,7 @@ class Overlay(QtWidgets.QWidget):
             painter.setPen(QtGui.QColor(Config.numberammocolour))
             font_q = QtGui.QFont(Config.font, Config.ammosize)
             painter.setFont(font_q)
-            ammorect = make_rect(get_dyn_pos_right(1620), get_dyn_y(980), get_dyn_x(Config.xoffsetammo), get_dyn_pos_right(Config.yoffsetammo), Config.ammoanchor)
+            ammorect = make_rect(get_dyn_pos_right(1620), get_dyn_y(980), get_dyn_x(Config.ammooffset[0]), get_dyn_pos_right(Config.ammooffset[1]), Config.ammoanchor)
             painter.drawText(ammorect, ALIGN_MAP[Config.ammoanchor], self.numberammo_text)
             
         # DEBUGGING

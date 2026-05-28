@@ -93,7 +93,6 @@ def imgui_thread(overlay):
             impl.process_inputs()
             imgui.new_frame()
             if Config.show_UI:
-                # All the healthbar customization options
                 imgui.begin("SoT HUD config", flags=imgui.WINDOW_ALWAYS_AUTO_RESIZE |
                                                 imgui.WINDOW_NO_SCROLLBAR|
                                                 imgui.WINDOW_NO_COLLAPSE|
@@ -150,6 +149,15 @@ def imgui_thread(overlay):
                         changed, lowhealth_rgb = imgui.color_edit3("Low health colour", *lowhealth_rgb)
                         if changed:
                             Config.lowhealthcolour = rgb_f_to_hex(lowhealth_rgb)
+                        if Config.advancedconfig:
+                            changed, Config.advancedbaroffset = imgui.drag_int2("0", Config.advancedbaroffset[0], Config.advancedbaroffset[1], 1, -screen_width, screen_width)
+                            if Config.lockbarscaling:
+                                changed, Config.advancedbarscaling = imgui.drag_float2("Position", Config.advancedbarscaling[0], Config.advancedbarscaling[0], 0.02, -screen_width, screen_width)
+                            else:
+                                changed, Config.advancedbarscaling = imgui.drag_float2("Position", Config.advancedbarscaling[0], Config.advancedbarscaling[1], 0.02, -screen_width, screen_width)
+                            imgui.same_line()
+                            imgui.checkbox("Lock x/y scaling", Config.lockbarscaling)
+                            
                     changed, Config.healthbardecotoggle = imgui.checkbox("Healthbar decorations", Config.healthbardecotoggle)
                     if Config.healthbardecotoggle:
                         imgui.same_line()
@@ -160,16 +168,23 @@ def imgui_thread(overlay):
                             except Exception as e:
                                 os.startfile(os.path.join(script_dir, "..", "Config"))
                             Config.show_UI = False
+                        if Config.advancedconfig:
+                            changed, Config.advancedhpbgoffset = imgui.drag_int2("0", Config.advancedhpbgoffset[0], Config.advancedhpbgoffset[1], 1, -screen_width, screen_width)
+                            if Config.lockhpbgscaling:
+                                changed, Config.advancedhpbgscaling = imgui.drag_float2("Position", Config.advancedhpbgscaling[0], Config.advancedhpbgscaling[0], 0.02, -screen_width, screen_width)
+                            else:
+                                changed, Config.advancedhpbgscaling = imgui.drag_float2("Position ", Config.advancedhpbgscaling[0], Config.advancedhpbgscaling[1], 0.02, -screen_width, screen_width)
+                            imgui.same_line()
+                            imgui.checkbox("Lock x/y scaling", Config.lockhpbgscaling)
                     changed, Config.numberhealthtoggle = imgui.checkbox("Health number", Config.numberhealthtoggle)
                     if Config.numberhealthtoggle:
                         changed, Config.hpsize = imgui.drag_int("Font Size", Config.hpsize, 0.5, 1, 128)
-                        changed, healthoffset = imgui.drag_int2("Position", Config.xoffsethealth, Config.yoffsethealth, 1, -screen_width, screen_width)
-                        Config.xoffsethealth, Config.yoffsethealth = healthoffset
+                        changed, Config.healthoffset = imgui.drag_int2("Position", Config.healthoffset[0], Config.healthoffset[1], 1, -screen_width, screen_width)
                         numberhealth_rgb = hex_to_rgb_f(Config.numberhealthcolour)
                         changed, numberhealth_rgb = imgui.color_edit3("", *numberhealth_rgb)
                         if changed:
                             Config.numberhealthcolour = rgb_f_to_hex(numberhealth_rgb)
-                        for row_idx, row in enumerate(anchor_grid):
+                        for _, row in enumerate(anchor_grid):
                             for col_idx, anchor in enumerate(row):
                                 # Highlight the currently selected anchor
                                 if anchor == Config.healthanchor:
@@ -200,7 +215,9 @@ def imgui_thread(overlay):
                     changed, Config.hp_slider = imgui.slider_float("Health testing slider", Config.hp_slider, 0, 100, "%.0f")
                     imgui.end_tab_item()
                     
+                # Regen meter tab
                 if imgui.begin_tab_item("Overheal")[0]:
+                    # Regen meter
                     changed, Config.regentoggle = imgui.checkbox("Regen meter", Config.regentoggle)
                     if Config.regentoggle:
                         overheal_rgb = hex_to_rgb_f(Config.overhealcolour)
@@ -211,6 +228,15 @@ def imgui_thread(overlay):
                         changed, regenbg_rgb = imgui.color_edit3("Background colour", *regenbg_rgb)
                         if changed:
                             Config.regenbgcolour = rgb_f_to_hex(regenbg_rgb)
+                        if Config.advancedconfig:
+                            changed, Config.advancedregenoffset = imgui.drag_int2("0", Config.advancedregenoffset[0], Config.advancedregenoffset[1], 1, -screen_width, screen_width)
+                            if Config.lockregenscaling:
+                                changed, Config.advancedregenscaling = imgui.drag_float2("Position", Config.advancedregenscaling[0], Config.advancedregenscaling[0], 0.02, -screen_width, screen_width)
+                            else:
+                                changed, Config.advancedregenscaling = imgui.drag_float2("Position", Config.advancedregenscaling[0], Config.advancedregenscaling[1], 0.02, -screen_width, screen_width)
+                            imgui.same_line()
+                            imgui.checkbox("Lock x/y scaling", Config.lockregenscaling)
+                    # Healthbar skull
                     changed, Config.skulltoggle = imgui.checkbox("Healthbar skull", Config.skulltoggle)
                     if Config.skulltoggle:
                         imgui.same_line()
@@ -221,6 +247,22 @@ def imgui_thread(overlay):
                             except Exception as e:
                                 os.startfile(os.path.join(script_dir, "..", "Config"))
                             Config.show_UI = False
+                        if Config.advancedconfig:
+                            changed, Config.advancedskulloffset = imgui.drag_int2("0", Config.advancedskulloffset[0], Config.advancedskulloffset[1], 1, -screen_width, screen_width)
+                            if Config.lockskullscaling:
+                                changed, Config.advancedskullscaling = imgui.drag_float2("Position", Config.advancedskullscaling[0], Config.advancedskullscaling[0], 0.02, -screen_width, screen_width)
+                            else:
+                                changed, Config.advancedskullscaling = imgui.drag_float2("Position", Config.advancedskullscaling[0], Config.advancedskullscaling[1], 0.02, -screen_width, screen_width)
+                            imgui.same_line()
+                            imgui.checkbox("Lock x/y scaling", Config.lockskullscaling)
+                            changed, Config.advancedskullbgoffset = imgui.drag_int2("0", Config.advancedskullbgoffset[0], Config.advancedskullbgoffset[1], 1, -screen_width, screen_width)
+                            if Config.lockskullbgscaling:
+                                changed, Config.advancedskullbgscaling = imgui.drag_float2("Position", Config.advancedskullbgscaling[0], Config.advancedskullbgscaling[0], 0.02, -screen_width, screen_width)
+                            else:
+                                changed, Config.advancedskullbgscaling = imgui.drag_float2("Position", Config.advancedskullbgscaling[0], Config.advancedskullbgscaling[1], 0.02, -screen_width, screen_width)
+                            imgui.same_line()
+                            imgui.checkbox("Lock x/y scaling", Config.lockskullbgscaling)
+                    # Overheal counter
                     changed, Config.numberregentoggle = imgui.checkbox("Overheal number", Config.numberregentoggle)
                     if Config.numberregentoggle:
                         changed, Config.regensize = imgui.drag_int("Font Size", Config.regensize, 0.5, 1, 128)
@@ -260,7 +302,10 @@ def imgui_thread(overlay):
                         imgui.columns(1)
                     changed, Config.regen_slider = imgui.slider_float("Regen testing slider", Config.regen_slider, 0, 200, "%.0f")
                     imgui.end_tab_item()
+
+                # Ammo tab
                 if imgui.begin_tab_item("Ammo")[0]:
+                    # Ammo pellets
                     changed, Config.ammotoggle = imgui.checkbox("Ammo", Config.ammotoggle)
                     if Config.ammotoggle:
                         imgui.same_line()
@@ -271,6 +316,15 @@ def imgui_thread(overlay):
                             except Exception as e:
                                 os.startfile(os.path.join(script_dir, "..", "Config"))
                             Config.show_UI = False
+                        if Config.advancedconfig:
+                            changed, Config.advancedammooffset = imgui.drag_int2("0", Config.advancedammooffset[0], Config.advancedammooffset[1], 1, -screen_width, screen_width)
+                            if Config.lockammoscaling:
+                                changed, Config.advancedammoscaling = imgui.drag_float2("Position", Config.advancedammoscaling[0], Config.advancedammoscaling[0], 0.02, -screen_width, screen_width)
+                            else:
+                                changed, Config.advancedammoscaling = imgui.drag_float2("Position ", Config.advancedammoscaling[0], Config.advancedammoscaling[1], 0.02, -screen_width, screen_width)
+                            imgui.same_line()
+                            imgui.checkbox("Lock x/y scaling", Config.lockammoscaling)
+                    # Ammo decorations
                     changed, Config.ammodecotoggle = imgui.checkbox("Ammo decorations", Config.ammodecotoggle)
                     if Config.ammodecotoggle:
                         imgui.same_line()
@@ -281,6 +335,15 @@ def imgui_thread(overlay):
                             except Exception as e:
                                 os.startfile(os.path.join(script_dir, "..", "Config"))
                             Config.show_UI = False
+                        if Config.advancedconfig:
+                            changed, Config.advancedammobgoffset = imgui.drag_int2("0", Config.advancedammobgoffset[0], Config.advancedammobgoffset[1], 1, -screen_width, screen_width)
+                            if Config.lockammobgscaling:
+                                changed, Config.advancedammobgscaling = imgui.drag_float2("Position", Config.advancedammobgscaling[0], Config.advancedammobgscaling[0], 0.02, -screen_width, screen_width)
+                            else:
+                                changed, Config.advancedammobgscaling = imgui.drag_float2("Position", Config.advancedammobgscaling[0], Config.advancedammobgscaling[1], 0.02, -screen_width, screen_width)
+                            imgui.same_line()
+                            imgui.checkbox("Lock x/y scaling", Config.lockammobgscaling)
+                    # Ammo counter
                     changed, Config.numberammotoggle = imgui.checkbox("Ammo number", Config.numberammotoggle)
                     if Config.numberammotoggle:
                         changed, Config.ammosize = imgui.drag_int("Font Size", Config.ammosize, 0.5, 1, 128)
@@ -290,7 +353,7 @@ def imgui_thread(overlay):
                         changed, numberammo_rgb = imgui.color_edit3("", *numberammo_rgb)
                         if changed:
                             Config.numberammocolour = rgb_f_to_hex(numberammo_rgb)
-                        for row_idx, row in enumerate(anchor_grid):
+                        for _, row in enumerate(anchor_grid):
                             for col_idx, anchor in enumerate(row):
                                 # Highlight the currently selected anchor
                                 if anchor == Config.ammoanchor:
@@ -332,6 +395,8 @@ def imgui_thread(overlay):
                         changed, crosshairoutline_rgb = imgui.color_edit3("Crosshair outline colour", *crosshairoutline_rgb)
                         if changed:
                             Config.crosshairoutlinecolour = rgb_f_to_hex(crosshairoutline_rgb)
+                        if Config.advancedconfig:
+                            changed, Config.advancedcrosshairoffset = imgui.drag_int2("0", Config.advancedcrosshairoffset[0], Config.advancedcrosshairoffset[1], 1, -screen_width, screen_width)
                     changed, Config.overlaytoggle = imgui.checkbox("General overlay", Config.overlaytoggle)
                     if Config.overlaytoggle:
                         imgui.same_line()
@@ -347,7 +412,7 @@ def imgui_thread(overlay):
                     except ValueError:
                         Config.font = "MS Shell Dlg 2" # standard pyqt font if invalid font
                         Config.current_font = overlay.fonts.index(Config.font)
-                    clicked, Config.current_font = imgui.combo(
+                    _, Config.current_font = imgui.combo(
                         "Font", Config.current_font, overlay.fonts, 30)
                     Config.font = overlay.fonts[Config.current_font]
                     if imgui.button("Recalibrate ammo colour"):
@@ -367,6 +432,7 @@ def imgui_thread(overlay):
                             update_hotkey(overlay)
                     imgui.same_line()
                     imgui.text(" - Exit hotkey")
+                    changed, Config.advancedconfig = imgui.checkbox("Advanced Config Settings", Config.advancedconfig)
                     imgui.end_tab_item()
                 imgui.end_tab_bar()
                 overlay.current_hp = Config.hp_slider

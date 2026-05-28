@@ -39,5 +39,7 @@
     "ammoprefix": "",
     "ammosuffix": "/5",
     "regenprefix": "",
-    "regensuffix": ""
+    "regensuffix": "",
+    "exit_hotkey": "delete",
+    "advancedconfig": "insert"
 }

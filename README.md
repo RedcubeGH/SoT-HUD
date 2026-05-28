@@ -15,18 +15,18 @@ Based on my interpretation of the Code of Conduct this software is safe to use w
 
 ## Installation
 
-### Option 1: Run from source
+### Option 1: Run from source in console
 
-1. Ensure **Python 3.11** is installed.
+1. Ensure [**Python 3.11**](https://www.python.org/downloads/release/python-31115/) is installed.
 2. Install the required dependencies:
 
    ```bash
-   py -3.11 -m pip install pillow pywin32 keyboard pyqt5 glfw imgui[glfw] PyOpenGL watchdog
+   py -3.11 -m pip install -r requirements.txt
    ```
 3. Run the program:
 
    ```bash
-   py -3.11 'Script/SoT HUD.py'
+   py -3.11 'Script/main.py'
    ```
 
 ### Option 2: Run the compiled release
@@ -44,12 +44,15 @@ SoT HUD.exe
 ---
 <br>
 
-## Hotkeys
+## Standard Hotkeys
+
 
 | Key        | Action                              |
 | ---------- | ----------------------------------- |
 | **Insert** | Toggle the ImGui configuration menu |
 | **Delete** | Exit SoT HUD and save configuration |
+>**Note:**
+>You can change these anytime in ```Config/config.json``` if your keyboard doesn't have these keys
 
 <br>
 
