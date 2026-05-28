@@ -17,13 +17,19 @@ Based on my interpretation of the Code of Conduct this software is safe to use w
 
 ### Option 1: Run from source in console
 
-1. Ensure [**Python 3.11**](https://www.python.org/downloads/release/python-31115/) is installed.
-2. Install the required dependencies:
+1. Ensure [**Python 3.11**](https://www.python.org/downloads/release/python-31115/) is installed
+
+2. Clone the Repo:
+
+   ```
+   git clone https://github.com/RedcubeGH/SoT-HUD
+   ```
+3. Install the required dependencies:
 
    ```bash
    py -3.11 -m pip install -r requirements.txt
    ```
-3. Run the program:
+4. Run the program:
 
    ```bash
    py -3.11 'Script/main.py'
