@@ -11,6 +11,9 @@ config_path = os.path.join(script_dir, "..", "Config", "Config.json")
 # defaults settings incase Config.json is missing or incomplete
 class Config:
     # configurable variables
+    def __init__(self):
+        pass
+
     lowhealthvar             = 70
     lowhealthcolour          = "#FF3745"
     healthcolour             = "#43EF88"
@@ -60,23 +63,21 @@ class Config:
     advancedskullbgoffset    = [0, 0]
     advancedregenoffset      = [0, 0]
     advancedcrosshairoffset  = [0, 0]
-    advancedskullscaling     = [1.0, 1.0]
-    lockskullscaling         = True
-    advancedammoscaling      = [1.0, 1.0]
-    lockammoscaling          = True
+    advancedskullscaling     = [53, 57]
+    lockskullscaling         = False
+    advancedammoscaling      = [22, 22]
+    lockammoscaling          = False
     advancedammospacing      = 0
-    advancedammobgscaling    = [1.0, 1.0]
-    lockammobgscaling        = True
+    advancedammobgscaling    = [352, 126]
+    lockammobgscaling        = False
     advancedbarscaling       = [1.0, 1.0]
     lockbarscaling           = True
-    advancedhpbgscaling      = [1.0, 1.0]
-    lockhpbgscaling          = True
+    advancedhpbgscaling      = [315, 100]
+    lockhpbgscaling          = False
     advancedregenscaling     = [1.0, 1.0]
     lockregenscaling         = True
-    advancedregenscaling     = [1.0, 1.0]
-    lockregenscaling         = True
-    advancedskullbgscaling   = [1.0, 1.0]
-    lockskullbgscaling       = True
+    advancedskullbgscaling   = [60, 60]
+    lockskullbgscaling       = False
 
     # constants
     MINREGENCOLOUR          = [0, 88, 0]
@@ -100,7 +101,7 @@ class Config:
     dynright                = 0
     try:
         hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
-    except:
+    except Exception:
         hwnd = 0
     
     # load Config.json

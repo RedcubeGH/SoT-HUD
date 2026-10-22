@@ -8,6 +8,9 @@ from overlay import Overlay
 from ui_imgui import imgui_thread
 
 def main():
+    # load config
+    Config.load_from_file(config_path)
+    
     # create QApplication first
     app = QtWidgets.QApplication(sys.argv)
     
@@ -20,9 +23,6 @@ def main():
     # create and show overlay
     overlay = Overlay(screen_width, screen_height)
     overlay.show()
-
-    # load config
-    Config.load_from_file(config_path)
     
     # apply native click-through after show()
     overlay.set_click_through_native()

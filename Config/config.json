@@ -1,20 +1,20 @@
 {
     "lowhealthvar": 70,
-    "lowhealthcolour": "#FF3745",
-    "healthcolour": "#43EF88",
-    "overhealcolour": "#4CEF7E",
-    "regenbgcolour": "#676767",
-    "numberhealthcolour": "#FFFFFF",
+    "lowhealthcolour": "#FFFFFF",
+    "healthcolour": "#FFFFFE",
+    "overhealcolour": "#000000",
+    "regenbgcolour": "#000000",
+    "numberhealthcolour": "#000000",
     "numberammocolour": "#FFFFFF",
     "numberregencolour": "#FFFFFF",
     "crosshaircolour": "#FFFFFF",
     "crosshairoutlinecolour": "#080808",
-    "font": "Times New Roman",
+    "font": "Windlass Extended",
     "ammosize": 25,
-    "hpsize": 25,
-    "regensize": 25,
+    "hpsize": 10,
+    "regensize": 8,
     "ammotoggle": true,
-    "ammodecotoggle": false,
+    "ammodecotoggle": true,
     "crosshairtoggle": false,
     "staticcrosshair": false,
     "healthbartoggle": true,
@@ -22,24 +22,104 @@
     "skulltoggle": true,
     "regentoggle": true,
     "overlaytoggle": false,
-    "numberhealthtoggle": false,
+    "numberhealthtoggle": true,
     "numberammotoggle": false,
-    "numberregentoggle": false,
-    "healthanchor": "sw",
-    "xoffsethealth": 0,
-    "yoffsethealth": 0,
+    "numberregentoggle": true,
+    "healthanchor": "w",
+    "healthoffset": [
+        13,
+        9
+    ],
     "ammoanchor": "e",
-    "xoffsetammo": 0,
-    "yoffsetammo": 0,
-    "regenanchor": "e",
-    "xoffsetregen": 0,
-    "yoffsetregen": 0,
+    "ammooffset": [
+        0,
+        0
+    ],
+    "regenanchor": "x",
+    "regenoffset": [
+        41,
+        -1
+    ],
     "healthprefix": "",
-    "healthsuffix": "/100",
+    "healthsuffix": "",
     "ammoprefix": "",
     "ammosuffix": "/5",
     "regenprefix": "",
     "regensuffix": "",
+    "calibrated_ammo_colour": [
+        144,
+        255,
+        181
+    ],
+    "toggle_menu_hotkey": "insert",
     "exit_hotkey": "delete",
-    "advancedconfig": "insert"
+    "advancedconfig": true,
+    "advancedbaroffset": [
+        0,
+        0
+    ],
+    "advancedhpbgoffset": [
+        0,
+        0
+    ],
+    "advancedammooffset": [
+        0,
+        0
+    ],
+    "advancedammobgoffset": [
+        0,
+        0
+    ],
+    "advancedskulloffset": [
+        0,
+        0
+    ],
+    "advancedskullbgoffset": [
+        0,
+        0
+    ],
+    "advancedregenoffset": [
+        0,
+        0
+    ],
+    "advancedcrosshairoffset": [
+        0,
+        0
+    ],
+    "advancedskullscaling": [
+        53,
+        57
+    ],
+    "lockskullscaling": false,
+    "advancedammoscaling": [
+        22,
+        22
+    ],
+    "lockammoscaling": false,
+    "advancedammospacing": 0,
+    "advancedammobgscaling": [
+        352,
+        126
+    ],
+    "lockammobgscaling": false,
+    "advancedbarscaling": [
+        1.0,
+        1.0
+    ],
+    "lockbarscaling": true,
+    "advancedhpbgscaling": [
+        315,
+        100
+    ],
+    "lockhpbgscaling": false,
+    "advancedregenscaling": [
+        1.0,
+        1.0
+    ],
+    "lockregenscaling": true,
+    "advancedskullbgscaling": [
+        60,
+        60
+    ],
+    "lockskullbgscaling": false
 }

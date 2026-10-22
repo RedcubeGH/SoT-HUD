@@ -21,8 +21,8 @@ def get_sizes():
         hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
         _, dyntop, Config.dynright, dynbot = win32gui.GetClientRect(hwnd)
         Config.sot_height = dynbot - dyntop
-    except:
-        hwnd = win32gui.FindWindow(None, 'Sea of Thieves')
+    except Exception:
+        win32gui.FindWindow(None, 'Sea of Thieves')
         user32 = ctypes.windll.user32
         Config.sot_height = user32.GetSystemMetrics(1)
         Config.dynright = Config.sot_width = user32.GetSystemMetrics(0)
@@ -39,21 +39,21 @@ def get_multiple_pixels(pixel_coords):
     height = bottom - top
     
     # Prepare DCs once
-    hwndDC = win32gui.GetWindowDC(Config.hwnd)
-    mfcDC = win32ui.CreateDCFromHandle(hwndDC)
-    saveDC = mfcDC.CreateCompatibleDC()
+    hwnd_dc = win32gui.GetWindowDC(Config.hwnd)
+    mfc_dc = win32ui.CreateDCFromHandle(hwnd_dc)
+    save_dc = mfc_dc.CreateCompatibleDC()
     
     # Create bitmap once
-    saveBitMap = win32ui.CreateBitmap()
-    saveBitMap.CreateCompatibleBitmap(mfcDC, width, height)
-    saveDC.SelectObject(saveBitMap)
+    save_bit_map = win32ui.CreateBitmap()
+    save_bit_map.CreateCompatibleBitmap(mfc_dc, width, height)
+    save_dc.SelectObject(save_bit_map)
     
     # Single capture
-    windll.user32.PrintWindow(Config.hwnd, saveDC.GetSafeHdc(), 3)
+    windll.user32.PrintWindow(Config.hwnd, save_dc.GetSafeHdc(), 3)
     
     # Extract entire image
-    saveBitMap.GetInfo()
-    bmpstr = saveBitMap.GetBitmapBits(True)
+    save_bit_map.GetInfo()
+    bmpstr = save_bit_map.GetBitmapBits(True)
     img = np.frombuffer(bmpstr, dtype=np.uint8)
     img = img.reshape((height, width, 4))
     
@@ -67,9 +67,9 @@ def get_multiple_pixels(pixel_coords):
             pixels.append(None)
     
     # Cleanup
-    saveDC.DeleteDC()
-    mfcDC.DeleteDC()
-    win32gui.ReleaseDC(Config.hwnd, hwndDC)
-    win32gui.DeleteObject(saveBitMap.GetHandle())
+    save_dc.DeleteDC()
+    mfc_dc.DeleteDC()
+    win32gui.ReleaseDC(Config.hwnd, hwnd_dc)
+    win32gui.DeleteObject(save_bit_map.GetHandle())
     
     return pixels

@@ -171,9 +171,9 @@ def imgui_thread(overlay):
                         if Config.advancedconfig:
                             changed, Config.advancedhpbgoffset = imgui.drag_int2("Healthbar BG offset##13", Config.advancedhpbgoffset[0], Config.advancedhpbgoffset[1], 1, -screen_width, screen_width)
                             if Config.lockhpbgscaling:
-                                changed, Config.advancedhpbgscaling = imgui.drag_float2("Healthbar BG scaling##14", Config.advancedhpbgscaling[0], Config.advancedhpbgscaling[0], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedhpbgscaling = imgui.drag_int2("Healthbar BG scaling##14", Config.advancedhpbgscaling[0], Config.advancedhpbgscaling[0], 1, -screen_width, screen_width)
                             else:
-                                changed, Config.advancedhpbgscaling = imgui.drag_float2("Healthbar BG scaling##15", Config.advancedhpbgscaling[0], Config.advancedhpbgscaling[1], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedhpbgscaling = imgui.drag_int2("Healthbar BG scaling##15", Config.advancedhpbgscaling[0], Config.advancedhpbgscaling[1], 1, -screen_width, screen_width)
                             imgui.same_line()
                             changed, Config.lockhpbgscaling = imgui.checkbox("Lock x/y scaling##16", Config.lockhpbgscaling)
                     changed, Config.numberhealthtoggle = imgui.checkbox("Health number##17", Config.numberhealthtoggle)
@@ -250,16 +250,16 @@ def imgui_thread(overlay):
                         if Config.advancedconfig:
                             changed, Config.advancedskulloffset = imgui.drag_int2("Skull offset##33", Config.advancedskulloffset[0], Config.advancedskulloffset[1], 1, -screen_width, screen_width)
                             if Config.lockskullscaling:
-                                changed, Config.advancedskullscaling = imgui.drag_float2("Skull scaling##34", Config.advancedskullscaling[0], Config.advancedskullscaling[0], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedskullscaling = imgui.drag_int2("Skull scaling##34", Config.advancedskullscaling[0], Config.advancedskullscaling[0], 1, -screen_width, screen_width)
                             else:
-                                changed, Config.advancedskullscaling = imgui.drag_float2("Skull scaling##35", Config.advancedskullscaling[0], Config.advancedskullscaling[1], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedskullscaling = imgui.drag_int2("Skull scaling##35", Config.advancedskullscaling[0], Config.advancedskullscaling[1], 1, -screen_width, screen_width)
                             imgui.same_line()
                             changed, Config.lockskullscaling = imgui.checkbox("Lock x/y scaling##36", Config.lockskullscaling)
                             changed, Config.advancedskullbgoffset = imgui.drag_int2("Skull BG offset##37", Config.advancedskullbgoffset[0], Config.advancedskullbgoffset[1], 1, -screen_width, screen_width)
                             if Config.lockskullbgscaling:
-                                changed, Config.advancedskullbgscaling = imgui.drag_float2("Skull BG scaling##38", Config.advancedskullbgscaling[0], Config.advancedskullbgscaling[0], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedskullbgscaling = imgui.drag_int2("Skull BG scaling##38", Config.advancedskullbgscaling[0], Config.advancedskullbgscaling[0], 1, -screen_width, screen_width)
                             else:
-                                changed, Config.advancedskullbgscaling = imgui.drag_float2("Skull BG scaling##39", Config.advancedskullbgscaling[0], Config.advancedskullbgscaling[1], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedskullbgscaling = imgui.drag_int2("Skull BG scaling##39", Config.advancedskullbgscaling[0], Config.advancedskullbgscaling[1], 1, -screen_width, screen_width)
                             imgui.same_line()
                             changed, Config.lockskullbgscaling = imgui.checkbox("Lock x/y scaling##40", Config.lockskullbgscaling)
                     # Overheal counter
@@ -318,9 +318,9 @@ def imgui_thread(overlay):
                         if Config.advancedconfig:
                             changed, Config.advancedammooffset = imgui.drag_int2("Ammo offset##50", Config.advancedammooffset[0], Config.advancedammooffset[1], 1, -screen_width, screen_width)
                             if Config.lockammoscaling:
-                                changed, Config.advancedammoscaling = imgui.drag_float2("Ammo scaling##51", Config.advancedammoscaling[0], Config.advancedammoscaling[0], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedammoscaling = imgui.drag_int2("Ammo scaling##51", Config.advancedammoscaling[0], Config.advancedammoscaling[0], 1, -screen_width, screen_width)
                             else:
-                                changed, Config.advancedammoscaling = imgui.drag_float2("Ammo scaling##52", Config.advancedammoscaling[0], Config.advancedammoscaling[1], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedammoscaling = imgui.drag_int2("Ammo scaling##52", Config.advancedammoscaling[0], Config.advancedammoscaling[1], 1, -screen_width, screen_width)
                             imgui.same_line()
                             changed, Config.lockammoscaling = imgui.checkbox("Lock x/y scaling##53", Config.lockammoscaling)
                     # Ammo decorations
@@ -337,9 +337,9 @@ def imgui_thread(overlay):
                         if Config.advancedconfig:
                             changed, Config.advancedammobgoffset = imgui.drag_int2("Ammo BG offset##56", Config.advancedammobgoffset[0], Config.advancedammobgoffset[1], 1, -screen_width, screen_width)
                             if Config.lockammobgscaling:
-                                changed, Config.advancedammobgscaling = imgui.drag_float2("Ammo BG scaling##57", Config.advancedammobgscaling[0], Config.advancedammobgscaling[0], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedammobgscaling = imgui.drag_int2("Ammo BG scaling##57", Config.advancedammobgscaling[0], Config.advancedammobgscaling[0], 1, -screen_width, screen_width)
                             else:
-                                changed, Config.advancedammobgscaling = imgui.drag_float2("Ammo BG scaling##58", Config.advancedammobgscaling[0], Config.advancedammobgscaling[1], 0.02, -screen_width, screen_width)
+                                changed, Config.advancedammobgscaling = imgui.drag_int2("Ammo BG scaling##58", Config.advancedammobgscaling[0], Config.advancedammobgscaling[1], 1, -screen_width, screen_width)
                             imgui.same_line()
                             changed, Config.lockammobgscaling = imgui.checkbox("Lock x/y scaling##59", Config.lockammobgscaling)
                     # Ammo counter

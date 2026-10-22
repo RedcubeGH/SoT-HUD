@@ -16,7 +16,7 @@ shared_value = 0.0
 clients = {}
 
 @sio.event
-async def connect(sid, environ):
+async def connect(sid):
     print(f"[CONNECT] sid={sid} (waiting for identify)")
 
 @sio.event
@@ -48,7 +48,7 @@ async def set_value(sid, value):
 
     await sio.emit("value_update", shared_value)
 
-async def start(app):
+async def start():
     tunnel = ngrok.connect(5000)
 
     print(f"SERVER URL: {tunnel.public_url}")
